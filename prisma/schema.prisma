@@ -1,0 +1,325 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(CUSTOMER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  vendor     Vendor?
+  customer   Customer?
+  admin      Admin?
+  tickets    Ticket[] @relation("UserTickets")
+  messages   Message[] @relation("UserMessages")
+  apiKeys    ApiKey[]
+  auditLogs  AuditLog[] 
+}
+
+enum Role {
+  ADMIN
+  VENDOR
+  CUSTOMER
+}
+
+model Vendor {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  businessName   String
+  gstNumber      String?
+  phone          String
+  address        String
+  status         VendorStatus @default(PENDING)
+  kycDocuments   KYC[]
+  createdAt      DateTime  @default(now())
+
+  categoryId     Int?
+
+  user           User      @relation(fields: [userId], references: [id])
+  category       VendorCategory? @relation(fields: [categoryId], references: [id])
+
+  products       Product[]
+  orders         Order[]
+  payouts        Payout[]
+  tickets        Ticket[]  @relation("VendorTickets")
+  zoneId     Int?
+  zone       LocationZone? @relation(fields: [zoneId], references: [id])
+}
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model Customer {
+  id       Int    @id @default(autoincrement())
+  userId   Int    @unique
+  name     String
+  phone    String
+  address  String
+
+  user     User   @relation(fields: [userId], references: [id])
+  orders   Order[]
+  tickets  Ticket[]  
+  shippingAddresses ShippingAddress[] 
+}
+
+model Admin {
+  id      Int    @id @default(autoincrement())
+  userId  Int    @unique
+  name    String
+
+  user    User   @relation(fields: [userId], references: [id])
+}
+
+model KYC {
+  id        Int      @id @default(autoincrement())
+  vendorId  Int
+  type      String
+  fileUrl   String
+  verified  Boolean  @default(false)
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  vendorId    Int
+  categoryId      Int?
+  name        String
+  description String
+  price       Float
+  status      ProductStatus @default(PENDING)
+  compliance  Compliance[]
+  createdAt   DateTime  @default(now())
+
+  vendor          Vendor         @relation(fields: [vendorId], references: [id])
+  category        ProductCategory? @relation(fields: [categoryId], references: [id])
+  orderItems      OrderItem[]
+}
+
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model Compliance {
+  id         Int     @id @default(autoincrement())
+  productId  Int
+  type       String  // e.g., MSDS, CE
+  fileUrl    String
+
+  product    Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id         Int       @id @default(autoincrement())
+  customerId Int
+  vendorId   Int
+  shippingSnapshot Json?     // Save snapshot of shipping details here
+  status     OrderStatus @default(PENDING)
+  total      Float
+  createdAt  DateTime    @default(now())
+
+  customer   Customer   @relation(fields: [customerId], references: [id])
+  vendor     Vendor     @relation(fields: [vendorId], references: [id])
+  items      OrderItem[]
+  payment    Payment?
+}
+
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  RETURNED
+  CANCELLED
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  amount    Float
+  status    PaymentStatus @default(PAID)
+  method    String
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+enum PaymentStatus {
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model Payout {
+  id          Int       @id @default(autoincrement())
+  vendorId    Int
+  amount      Float
+  status      PayoutStatus @default(PENDING)
+  requestedAt DateTime     @default(now())
+
+  vendor      Vendor    @relation(fields: [vendorId], references: [id])
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  subject     String
+  status      TicketStatus @default(OPEN)
+  customerId  Int?
+  vendorId    Int?
+  userId      Int
+  createdAt   DateTime @default(now())
+
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  vendor      Vendor?   @relation("VendorTickets", fields: [vendorId], references: [id])
+  user        User      @relation("UserTickets", fields: [userId], references: [id])
+  messages    Message[]
+}
+
+enum TicketStatus {
+  OPEN
+  RESPONDED
+  CLOSED
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  userId    Int
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  user      User     @relation("UserMessages", fields: [userId], references: [id])
+}
+
+model Report {
+  id         Int      @id @default(autoincrement())
+  type       String   // sales, return, top-products
+  data       Json
+  generatedAt DateTime @default(now())
+}
+
+model Page {
+  id        Int     @id @default(autoincrement())
+  title     String
+  slug      String  @unique
+  content   String
+  updatedAt DateTime @updatedAt
+}
+
+model Promotion {
+  id         Int     @id @default(autoincrement())
+  title      String
+  code       String  @unique
+  discount   Float
+  validFrom  DateTime
+  validTo    DateTime
+}
+
+model ApiKey {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  key       String   @unique
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+
+model ShippingAddress {
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  name        String
+  phone       String
+  addressLine String
+  city        String
+  state       String
+  postalCode  String
+  country     String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+}
+
+model VendorCategory {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  vendors     Vendor[]
+}
+
+
+
+model ProductCategory {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  products    Product[]
+}
+
+
+
+
+model LocationZone {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  country    String
+  region     String?
+  vendors    Vendor[]
+}
+
+
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  action      String   // e.g., "CREATE_PRODUCT", "APPROVE_VENDOR"
+  targetType  String   // e.g., "Product", "Vendor"
+  targetId    Int?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+}
+
