@@ -24,6 +24,15 @@ export default function OptionsMenu() {
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      router.push('/login');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -57,11 +66,6 @@ export default function OptionsMenu() {
           },
         }}
       >
-        <MenuItem onClick={() => { handleClose(); router.push('/profile');}}>
-          Profile
-        </MenuItem>
-
-        <Divider />
 
         <MenuItem onClick={() => { handleClose(); router.push('/account');}}>
           My account
@@ -77,7 +81,10 @@ export default function OptionsMenu() {
             },
           }}
         >
-          <ListItemText>Logout</ListItemText>
+          <ListItemIcon onClick={handleLogout}>
+            <ListItemText primary="Logout" />
+          </ListItemIcon>
+
           <ListItemIcon>
             <LogoutRoundedIcon fontSize="small" />
           </ListItemIcon>

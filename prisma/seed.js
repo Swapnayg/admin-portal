@@ -1,7 +1,38 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+
 const prisma = new PrismaClient();
 
 async function main() {
+
+  const email = 'admin@platform.com';
+  const plainPassword = 'admin123'; // Change before production
+  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+    // Check if the admin user already exists
+  const existing = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!existing) {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        role: 'ADMIN',
+        admin: {
+          create: {
+            name: 'Super Admin',
+          },
+        },
+      },
+    });
+
+    console.log(`✅ Default admin created: ${user.email}`);
+  } else {
+    console.log(`⚠️ Admin already exists: ${existing.email}`);
+  }
+
   await prisma.vendorCategory.createMany({
     data: [
       { name: "Manufacturing Tools" },
