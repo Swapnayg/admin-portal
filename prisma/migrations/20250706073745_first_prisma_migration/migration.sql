@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE `Vendor` ADD COLUMN `city` VARCHAR(191) NULL,
+    ADD COLUMN `contactEmail` VARCHAR(191) NULL,
+    ADD COLUMN `contactName` VARCHAR(191) NULL,
+    ADD COLUMN `contactPhone` VARCHAR(191) NULL,
+    ADD COLUMN `designation` VARCHAR(191) NULL,
+    ADD COLUMN `state` VARCHAR(191) NULL,
+    ADD COLUMN `website` VARCHAR(191) NULL,
+    ADD COLUMN `zipcode` VARCHAR(191) NULL;

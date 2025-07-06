@@ -1,118 +1,128 @@
+// app/vendors/[id]/review/page.tsx
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Phone, Calendar, Package, CreditCard, ShoppingCart, CheckCircle } from 'lucide-react';
+import { notFound } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-const VendorProfile = () => {
+interface Props {
+  id: number;
+}
+
+export default async function ViewVendorPage({ id }: Props) {
+  const vendor = await prisma.vendor.findUnique({
+    where: { id: id },
+    include: {
+      user: { select: { username: true, email: true } },
+      category: true,
+      zone: true,
+      kycDocuments: true,
+    },
+  });
+
+  if (!vendor) return notFound();
+
   return (
-      <div className="max-w-full w-full px-6 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-semibold text-slate-900">Vendor Profile: Acme Tools</h1>
-        </div>
+    <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded shadow-lg">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-800">Vendor Details</h1>
+        <Link
+          href="/vendors"
+          className="text-sm text-slate-600 hover:underline hover:text-slate-800"
+        >
+          ← Back to Vendors
+        </Link>
+      </div>
 
-        {/* Vendor Info */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <div className="flex gap-6">
-            <div className="w-32 h-32 bg-slate-200 rounded-lg overflow-hidden">
-              <img 
-                src="/lovable-uploads/cb047ea6-0915-4c95-aaad-1c2e9c027cb5.png" 
-                alt="Vendor" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            
-            <div className="flex-1">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-slate-900 mb-4">Contact Info:</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Mail size={18} className="text-slate-400" />
-                    <span className="text-sm text-slate-700">Email: acme@example.com</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone size={18} className="text-slate-400" />
-                    <span className="text-sm text-slate-700">Phone: +91 999...</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar size={18} className="text-slate-400" />
-                    <span className="text-sm text-slate-700">Joined: 12 Jan 2024</span>
-                  </div>
-                </div>
-              </div>
-              
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                Suspend Vendor
-              </Button>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+        <div>
+          <strong className="text-gray-700">Business Name:</strong>
+          <div className="text-gray-900">{vendor.businessName}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">Status:</strong>
+          <div className="text-gray-900">{vendor.status}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">Username:</strong>
+          <div className="text-gray-900">{vendor.user.username}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">Email:</strong>
+          <div className="text-gray-900">{vendor.user.email}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">Phone:</strong>
+          <div className="text-gray-900">{vendor.phone}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">Address:</strong>
+          <div className="text-gray-900">
+            {vendor.address}, {vendor.city}, {vendor.state} - {vendor.zipcode}
           </div>
         </div>
-
-        {/* Tabs */}
-        <div className="bg-white rounded-lg border border-slate-200">
-          <div className="border-b border-slate-200">
-            <div className="flex">
-              <button className="px-6 py-3 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
-                Product Summary
-              </button>
-              <button className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900">
-                Payouts
-              </button>
-              <button className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900">
-                Orders
-              </button>
-              <button className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900">
-                KYC
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            <div className="grid grid-cols-4 gap-6">
-              <div className="flex items-center gap-3">
-                <Package size={20} className="text-slate-400" />
-                <div>
-                  <div className="text-2xl font-semibold text-slate-900">20</div>
-                  <div className="text-sm text-slate-600">Active Products</div>
+        <div>
+          <strong className="text-gray-700">Category:</strong>
+          <div className="text-gray-900">{vendor.category?.name || "—"}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">Zone:</strong>
+          <div className="text-gray-900">{vendor.zone?.name || "—"}</div>
+        </div>
+        <div>
+          <strong className="text-gray-700">GST Number:</strong>
+          <div className="text-gray-900">{vendor.gstNumber || "—"}</div>
+        </div>
+        <div className="md:col-span-2">
+          <strong className="text-gray-700">KYC Documents:</strong>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+            {vendor.kycDocuments.length > 0 ? (
+              vendor.kycDocuments.map((doc) => (
+                <div key={doc.id} className="border p-2 rounded shadow-sm bg-gray-50">
+                  <div className="font-semibold mb-1 text-gray-700">{doc.type}</div>
+                  <a
+                    href={doc.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full h-40 overflow-hidden rounded border border-gray-300"
+                  >
+                    <img
+                      src={doc.fileUrl}
+                      alt={doc.type}
+                      className="object-contain w-full h-full hover:scale-105 transition-transform duration-200"
+                    />
+                  </a>
                 </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <CreditCard size={20} className="text-slate-400" />
-                <div>
-                  <div className="text-2xl font-semibold text-slate-900">₹45,000</div>
-                  <div className="text-sm text-slate-600">Total Revenue</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <ShoppingCart size={20} className="text-slate-400" />
-                <div>
-                  <div className="text-2xl font-semibold text-slate-900">210</div>
-                  <div className="text-sm text-slate-600">Orders</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <CheckCircle size={20} className="text-green-600" />
-                <div>
-                  <div className="text-lg font-semibold text-slate-900">Verified</div>
-                  <div className="text-sm text-slate-600">KYC Status</div>
-                </div>
-              </div>
-            </div>
+              ))
+            ) : (
+              <div className="text-gray-500">No documents</div>
+            )}
           </div>
         </div>
       </div>
-  );
-};
 
-export default VendorProfile;
+      <div className="flex gap-4 mt-8 justify-end">
+         {/* Suspend button for approved status */}
+        {vendor.status === "APPROVED" && (
+          <form action="/api/vendors/suspend-vendor" method="POST">
+            <input type="hidden" name="id" value={id} />
+            <Button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white">
+              Suspend Vendor
+            </Button>
+          </form>
+        )}
+      
+        {/* Reactivate button for suspended status */}
+      {vendor.status === "SUSPENDED" && (
+        <form action="/api/vendors/reactivate-vendor" method="POST">
+          <input type="hidden" name="id" value={id} />
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+            Reactivate Account
+          </Button>
+        </form>
+      )}
+
+      </div>
+    </div>
+  );
+}

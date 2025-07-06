@@ -15,6 +15,7 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -45,10 +46,14 @@ const handleLogin = async (e: React.FormEvent) => {
     });
 
     const data = await response.json();
-    if (!response.ok) {
-      toast?.({ title: 'Login Failed', description: data.error, variant: 'destructive' });
+   if (!response.ok) {
+      const errorMessage = data?.error || 'Login failed. Please try again.';
+      setFormError(errorMessage); // <- set error here
       return;
     }
+
+    // on success, clear the error
+    setFormError('');
 
     toast?.({ title: 'Login Successful', description: `Welcome back, ${data.user.email}` });
     // CLEAR FIELDS HERE
@@ -124,7 +129,11 @@ const handleLogin = async (e: React.FormEvent) => {
                 Forgot Password?
               </Link>
             </div>
-
+            {formError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                {formError}
+              </div>
+            )}
             <Button
               type="submit"
               className="w-full bg-slate-700 hover:bg-slate-800 text-white"

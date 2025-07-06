@@ -5,19 +5,27 @@ const prisma = new PrismaClient();
 
 async function main() {
 
-  const email = 'admin@platform.com';
+  const email = 'infoswap90@gmail.com';
   const plainPassword = 'admin123'; // Change before production
+  const username = "admin";
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
     // Check if the admin user already exists
-  const existing = await prisma.user.findUnique({
-    where: { email },
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: email },
+        { username: username }
+      ]
+  }
+
   });
 
   if (!existing) {
     const user = await prisma.user.create({
       data: {
         email,
+        username:username,
         password: hashedPassword,
         role: 'ADMIN',
         admin: {
