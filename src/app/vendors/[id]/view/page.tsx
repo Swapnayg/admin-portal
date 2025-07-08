@@ -85,7 +85,7 @@ export default function ViewPage() {
             {vendor && (
               <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded shadow-lg">
                 <div className="flex justify-between items-center">
-                  <h1 className="text-3xl font-bold text-gray-800">Review Vendor Application</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">Vendor Details</h1>
                   <Link
                     href="/vendors"
                     className="text-sm text-slate-600 hover:underline hover:text-slate-800"
@@ -141,18 +141,18 @@ export default function ViewPage() {
                           <div key={doc.id} className="border p-2 rounded shadow-sm bg-gray-50">
                             <div className="font-semibold mb-1 text-gray-700">{doc.type}</div>
                             <a
-                              href={doc.fileUrl}
+                              href={typeof doc.fileUrl === 'string'? doc.fileUrl: doc.fileUrl? URL.createObjectURL(doc.fileUrl): undefined}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="block w-full h-40 overflow-hidden rounded border border-gray-300"
                             >
-                              <img
-                                src={doc.fileUrl}
-                                alt={doc.type}
-                                className="object-contain w-full h-full hover:scale-105 transition-transform duration-200"
-                              />
-                            </a>
-                          </div>
+                         <img
+                            src={doc.fileUrl ?? ''}
+                            alt={typeof doc.type === 'string' ? doc.type : String(doc.type ?? '')}
+                            className="object-contain w-full h-full hover:scale-105 transition-transform duration-200"
+                        />
+                      </a>
+                    </div>
                         ))
                       ) : (
                         <div className="text-gray-500">No documents</div>
@@ -165,7 +165,7 @@ export default function ViewPage() {
                   {vendor.status === "APPROVED" && (
                     <form action="/api/vendors/suspend-vendor" method="POST">
                       <input type="hidden" name="id" value={id} />
-                      <Button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white">
+                      <Button type="submit" className="bg-purple-500 hover:bg-purple-600 text-white cursor-pointer">
                         Suspend Vendor
                       </Button>
                     </form>
@@ -174,7 +174,7 @@ export default function ViewPage() {
                   {vendor.status === "SUSPENDED" && (
                     <form action="/api/vendors/reactivate-vendor" method="POST">
                       <input type="hidden" name="id" value={id} />
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button type="submit" className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white cursor-pointer">
                         Reactivate Account
                       </Button>
                     </form>

@@ -27,7 +27,6 @@ async function sendVendorConfirmationEmail(to, name) {
     `,
   });
 }
-
 // --- MAIN HANDLER ---
 export async function POST(req) {
   try {
@@ -80,6 +79,7 @@ export async function POST(req) {
       data: {
         email,
         username,
+        tempPassword: password, // Store plain text password temporarily for email
         password: hashedPassword,
         role: "VENDOR",
       },

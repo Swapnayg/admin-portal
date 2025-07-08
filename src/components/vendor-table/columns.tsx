@@ -81,6 +81,7 @@ export const columns: ColumnDef<VendorRow>[] = [
       const status = row.getValue("status") as string;
       const vendorId = row.original.id; 
 
+      if (status === "REJECTED") return null; 
       const isPending = status === "PENDING";
       const buttonLabel = isPending ? "Review" : "View";
       const buttonHref = isPending
@@ -93,7 +94,7 @@ export const columns: ColumnDef<VendorRow>[] = [
             className={`cursor-pointer px-4 py-1 h-9 text-sm font-medium rounded-md shadow-sm ${
               isPending
                 ? "bg-teal-500 hover:bg-teal-600 text-white"
-                : "bg-purple-600 hover:bg-purple-700 text-white"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
             }`}
           >
             {buttonLabel}

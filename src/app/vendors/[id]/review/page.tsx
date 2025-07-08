@@ -153,13 +153,13 @@ export default function reviewPage() {
                               rel="noopener noreferrer"
                               className="block w-full h-40 overflow-hidden rounded border border-gray-300"
                             >
-                              <img
-                                src={doc.fileUrl}
-                                alt={doc.type}
-                                className="object-contain w-full h-full hover:scale-105 transition-transform duration-200"
-                              />
-                            </a>
-                          </div>
+                          <img
+                            src={doc.fileUrl ?? ''}
+                            alt={typeof doc.type === 'string' ? doc.type : String(doc.type ?? '')}
+                            className="object-contain w-full h-full hover:scale-105 transition-transform duration-200"
+                          />
+                          </a>
+                        </div>
                         ))
                       ) : (
                         <div className="text-gray-500">No documents</div>
@@ -168,21 +168,29 @@ export default function reviewPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-8 justify-end">
-                  <form action="/api/vendors/approve-vendor" method="POST">
-                    <input type="hidden" name="id" value={vendor.id} />
-                    <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white">
-                      Approve
-                    </Button>
-                  </form>
+               <div className="flex gap-4 mt-8 justify-end">
+                <form action="/api/vendors/approve-vendor" method="POST">
+                  <input type="hidden" name="id" value={vendor.id} />
+                  <Button
+                    type="submit"
+                    className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                  >
+                    Approve
+                  </Button>
+                </form>
 
-                  <form action="/api/vendors/reject-vendor" method="POST">
-                    <input type="hidden" name="id" value={vendor.id} />
-                    <Button type="submit" variant="destructive" className="bg-slate-600 hover:bg-slate-700 text-white">
-                      Reject
-                    </Button>
-                  </form>
-                </div>
+                <form action="/api/vendors/reject-vendor" method="POST">
+                  <input type="hidden" name="id" value={vendor.id} />
+                  <Button
+                    type="submit"
+                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                  >
+                    Reject
+                  </Button>
+                </form>
+              </div>
+
               </div>
             )}
 

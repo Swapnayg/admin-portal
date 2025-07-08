@@ -260,23 +260,39 @@ const VendorRegistration = () => {
           description: "Your vendor registration has been submitted successfully.",
         });
 
-        // Reset forms and state
+        // Reset all form states
         businessForm.reset();
         contactForm.reset();
         accountForm.reset();
 
         setUploadedFiles({
-          panCard: undefined,
-          gstCertificate: undefined,
-          addressProof: undefined,
+          panCard:{ name: '', url: '' },
+          gstCertificate: { name: '', url: '' },
+          addressProof: { name: '', url: '' },
         });
+
         setFileErrors({
           panCard: '',
           gstCertificate: '',
           addressProof: '',
         });
+        setFileUploadStatus({
+          panCard: 'idle',
+          gstCertificate: 'idle',
+          addressProof: 'idle',
+        });
+
+        // ✅ CLEAR SELECTED DROPDOWN VALUES
+        setSelectedBusinessType('');     // or null based on your default state
+        setSelectedDesignation('');      // or null
+
+        // ✅ RESET CURRENT STEP AND COMPLETION
         setCurrentStep(1);
         setCompletedSteps([]);
+
+        // ✅ CLEAR ANY OTHER STATES IF NEEDED
+        setErrorMessage('');
+        setErrorDialogOpen(false);
 
         // Mark step 3 as completed
         if (!completedSteps.includes(3)) {

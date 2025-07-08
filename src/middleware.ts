@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
   // Define your public pages here:
-  const publicRoutes = ['/login', '/vendor-registration','/reset-password'];
+  const publicRoutes = ['/login', '/vendor-registration','/reset-password', '/contact-admin'];
 
   const isPublicRoute = publicRoutes.includes(pathname);
   const isProtectedRoute = !isPublicRoute;

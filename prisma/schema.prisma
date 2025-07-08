@@ -18,6 +18,7 @@ model User {
   email     String   @unique
   username  String   @unique
   password  String
+  tempPassword String? // 👈 Store plain text password temporarily for email
   role      Role     @default(CUSTOMER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -135,6 +136,8 @@ model Product {
   compliance           Compliance[]
   createdAt            DateTime      @default(now())
   defaultCommissionPct Float? // Optional: default commission set by admin
+  // 🟢 Add this line:
+  stock                Int           @default(0)
 
   vendor       Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   category     ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -261,19 +264,48 @@ enum PayoutStatus {
 }
 
 model Ticket {
-  id         Int          @id @default(autoincrement())
-  subject    String
-  status     TicketStatus @default(OPEN)
-  customerId Int?
-  vendorId   Int?
-  userId     Int
-  createdAt  DateTime     @default(now())
+  id          Int           @id @default(autoincrement())
+  subject     String
+  message     String
+  type        TicketType    @default(GENERAL)
+  status      TicketStatus  @default(OPEN)
 
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  vendor   Vendor?   @relation("VendorTickets", fields: [vendorId], references: [id], onDelete: SetNull)
-  user     User      @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
-  messages Message[]
+  // Linked user types (optional)
+  userId      Int?          
+  vendorId    Int?
+  customerId  Int?
+
+  // Optional contact info for general users
+  name        String?       // for general/anonymous submissions
+  email       String?
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User?         @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  vendor      Vendor?       @relation("VendorTickets", fields: [vendorId], references: [id], onDelete: SetNull)
+  customer    Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  messages    Message[]     @relation("TicketMessages")
 }
+
+
+enum TicketType {
+  GENERAL
+  TECHNICAL_ISSUE
+  DOCUMENTS
+  ACCOUNT_CLEARANCE
+  REACTIVATE_ACCOUNT
+  REFUND_REQUEST         // customer-specific
+  ORDER_NOT_RECEIVED     // customer-specific
+  RETURN_ISSUE           // customer-specific
+  PAYMENT_ISSUE          // vendor/customer
+  PRODUCT_LISTING_ISSUE  // vendor-specific
+  INVENTORY_UPDATE_ISSUE // vendor-specific
+  SHIPPING_ISSUE         // vendor-specific
+  SUPPORT
+}
+
 
 enum TicketStatus {
   OPEN
@@ -282,14 +314,15 @@ enum TicketStatus {
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  ticketId  Int
-  userId    Int
-  content   String
-  createdAt DateTime @default(now())
+  id         Int       @id @default(autoincrement())
+  content    String
+  isAdmin    Boolean   @default(false)
+  ticketId   Int
+  userId     Int?
 
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  user   User   @relation("UserMessages", fields: [userId], references: [id], onDelete: Cascade)
+  ticket     Ticket    @relation("TicketMessages", fields: [ticketId], references: [id], onDelete: Cascade)
+  user       User?     @relation("UserMessages", fields: [userId], references: [id])
+  createdAt  DateTime  @default(now())
 }
 
 model Report {
