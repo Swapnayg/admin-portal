@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import contactImage from '@/public/contact-admin.png'; // Save uploaded image as `public/contact-admin.png`
+
 
 const ticketTypes = [
   { label: 'General', value: 'GENERAL' },
@@ -33,7 +33,7 @@ export default function ContactAdminForm() {
     setLoading(true);
     setSuccess(false);
     try {
-      const res = await fetch('/api/tickets', {
+      const res = await fetch('/api/tickets/add-contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -60,31 +60,39 @@ export default function ContactAdminForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-6">
-      <div className="max-w-5xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        {/* Left image */}
-        <div className="relative bg-slate-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-4 py-12">
+      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+        {/* Left: Clear image with soft overlay */}
+        <div className="relative h-full min-h-[500px] bg-slate-100">
           <Image
-            src={contactImage}
+            src='/contact-support.png'
             alt="Contact Admin"
-            layout="fill"
+            fill
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-black bg-opacity-40" />
-          <div className="absolute bottom-6 left-6 text-white text-lg font-semibold z-10">
-            Need help? <br /> Reach out to our support team
+          {/* Optional soft gradient for readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-slate-900/30" />
+
+          {/* Message over the image */}
+          <div className="absolute bottom-8 left-8 z-20 px-4 py-3 bg-black/60 rounded-lg backdrop-blur-sm shadow-md text-white max-w-xs">
+            <h3 className="text-2xl font-bold leading-tight drop-shadow-md">Need Help?</h3>
+            <p className="text-sm text-white/90 mt-1 drop-shadow-md">
+              Reach out to our Support Team
+            </p>
           </div>
         </div>
 
-        {/* Right form */}
-        <div className="p-8 bg-white text-slate-800">
-          <h2 className="text-2xl font-bold mb-2">Contact Admin</h2>
-          <p className="mb-6 text-slate-500">Submit a support ticket and we'll respond shortly.</p>
+        {/* Right: Form */}
+        <div className="p-10 bg-white text-slate-800">
+          <h2 className="text-3xl font-semibold mb-2">Contact Admin</h2>
+          <p className="mb-6 text-slate-500">
+            Submit a support ticket and we’ll respond shortly.
+          </p>
 
           {success && (
             <div className="mb-4 p-3 rounded text-green-700 bg-green-100 border border-green-300">
-              Ticket submitted successfully. We'll contact you soon!
+              Ticket submitted successfully. We’ll contact you soon!
             </div>
           )}
 
@@ -97,7 +105,7 @@ export default function ContactAdminForm() {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-md border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -109,7 +117,7 @@ export default function ContactAdminForm() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-md border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -119,7 +127,7 @@ export default function ContactAdminForm() {
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-md border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 {ticketTypes.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -137,7 +145,7 @@ export default function ContactAdminForm() {
                 required
                 value={formData.subject}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-md border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -149,16 +157,16 @@ export default function ContactAdminForm() {
                 required
                 value={formData.message}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-md border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition duration-150"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-md transition duration-150"
             >
-              {loading ? 'Submitting...' : 'Submit Ticket'}
+              {loading ? 'Submitting...' : 'Submit'}
             </button>
           </form>
         </div>

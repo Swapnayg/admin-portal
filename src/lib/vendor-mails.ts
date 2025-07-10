@@ -225,3 +225,55 @@ export const sendReactivationEmail = async (
     html: htmlContent,
   });
 };
+
+
+export const sendAcknowledgementEmail = async ({
+  to,
+  name,
+  subject,
+}: {
+  to: string;
+  name?: string;
+  subject: string;
+}) => {
+  const mailOptions = {
+    from: `"Support Team" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: `We've received your ticket: ${subject}`,
+    html: `
+      <div style="font-family: sans-serif; color: #333;">
+        <h2 style="color: #4f46e5;">Hi ${name || 'there'},</h2>
+        <p>Thank you for reaching out to us. We’ve received your support request and our team is already on it.</p>
+        <p>We believe that with a little patience and support, every issue finds a solution.</p>
+
+        <blockquote style="margin: 1em 0; padding: 1em; background: #f0f4ff; border-left: 4px solid #4f46e5;">
+          “Hope is being able to see that there is light despite all of the darkness.” – Desmond Tutu
+        </blockquote>
+
+        <p>We’ll get back to you as soon as possible. Meanwhile, feel free to reply if you have additional info.</p>
+
+        <p style="margin-top: 2em;">Warm regards,<br/>The Support Team</p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+
+};
+
+
+
+interface SendEmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+}
+
+export async function sendTicketEmail({ to, subject, html }: SendEmailOptions) {
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to,
+    subject,
+    html,
+  });
+}

@@ -1,93 +1,214 @@
+'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Search, Download, ChevronDown } from 'lucide-react';
-import Link from "next/link";
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select';
+import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@/components/ui/table';
+import { ArrowUpDown, Eye } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import TicketViewModal from './TicketViewModal';
 
-const Tickets = () => {
-  const tickets = [
-    {
-      id: 'TKT-3201',
-      from: 'Vendor: Acme',
-      subject: 'Missing Order',
-      status: 'Open',
-      statusColor: 'bg-orange-100 text-orange-800'
-    },
-    {
-      id: 'TKT-3202',
-      from: 'Cust: Ravi',
-      subject: 'Refund Delay',
-      status: 'Responded',
-      statusColor: 'bg-blue-100 text-blue-800'
+interface Message {
+  id: number;
+  sender: string;
+  content: string;
+  createdAt: string;
+  isAdmin: boolean;
+}
+
+
+interface Ticket {
+  name: string;
+  id: number;
+  subject: string;
+  message:string;
+  type: string;
+  status: 'OPEN' | 'RESPONDED' | 'CLOSED';
+  vendor?: {
+    user: {
+      name: string;
+    };
+  };
+  customer?: {
+    user: {
+      name: string;
+    };
+  };
+  createdAt: string;
+  messages: Message[];
+}
+
+export default function Tickets() {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortKey, setSortKey] = useState<'id' | 'status' | 'subject'>('id');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const perPage = 10;
+
+  useEffect(() => {
+    fetch(`/api/tickets/all-tickets?page=${page}&sort=${sortKey}&order=${sortOrder}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setTickets(data.tickets);
+      });      
+  }, [page, sortKey, sortOrder]);
+
+
+  const handleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    else setSortKey(key);
+  };
+
+  const getFromLabel = (ticket: Ticket) => {
+    if (ticket.vendor) return `Vendor: ${ticket.vendor?.user?.name}`;
+    if (ticket.customer) return `Cust: ${ticket.customer?.user?.name}`;
+    return ticket.name || 'Anonymous';
+  };
+
+  const getStatusBadge = (status: Ticket['status']) => {
+    switch (status) {
+      case 'OPEN':
+        return <span className="text-orange-600 bg-orange-100 px-2 py-1 rounded text-xs">Open</span>;
+      case 'RESPONDED':
+        return <span className="text-blue-600 bg-blue-100 px-2 py-1 rounded text-xs">Responded</span>;
+      case 'CLOSED':
+        return <span className="text-gray-600 bg-gray-200 px-2 py-1 rounded text-xs">Closed</span>;
     }
-  ];
+  };
+
+  const handleExport = () => {
+    const exportData = tickets.map(t => ({
+      ID: `TKT-${t.id}`,
+      From: getFromLabel(t),
+      Subject: t.subject,
+      Type: t.type,
+      Status: t.status,
+      Date: new Date(t.createdAt).toLocaleString()
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tickets');
+    XLSX.writeFile(workbook, 'Support_Tickets.xlsx');
+  };
+
+   const filteredTickets = tickets.filter((ticket) => {
+    const subject = ticket.subject?.toLowerCase() || '';
+    const type = ticket.type?.toLowerCase() || '';
+    const status = ticket.status?.toLowerCase() || '';
+    const from = getFromLabel(ticket)?.toLowerCase() || '';
+    const term = searchTerm.toLowerCase();
+
+    return (
+      subject.includes(term) ||
+      from.includes(term) ||
+      type.includes(term) ||
+      status.includes(term)
+    );
+  });
+
+  const handleOpenModal = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setIsModalOpen(true);
+  };
+
+  const handleStatusChange = async (ticketId: number, status: Ticket['status'], reply: string) => {
+    await fetch(`/api/tickets/reply?ticketId=${ticketId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status, reply }),
+    });
+    // Refresh tickets
+    fetch(`/api/tickets/all-tickets?page=${page}&sort=${sortKey}&order=${sortOrder}`)
+      .then((res) => res.json())
+      .then((data) => setTickets(data.tickets));
+  };
 
   return (
-      <div className="max-w-full w-full px-6 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="default" size="sm">All</Button>
-            <Button variant="ghost" size="sm">Open</Button>
-            <Button variant="ghost" size="sm">Closed</Button>
-          </div>
-          <div className="flex items-center gap-3">
-            <select className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
-              <option>All Vendors</option>
-            </select>
-            <select className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
-              <option>All Customers</option>
-            </select>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg w-48 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <Button size="sm" className="gap-2 bg-slate-700 hover:bg-slate-800 text-white">
-              <Download size={14} />
-              Export CSV
-            </Button>
-          </div>
-        </div>
+    <div className="p-6 w-full max-w-full">
+      <h2 className="text-xl font-semibold mb-4">Support Tickets</h2>
 
-        {/* Support Tickets Table */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="p-4 bg-slate-50 border-b border-slate-200">
-            <h2 className="font-semibold text-slate-900">Support Tickets</h2>
-          </div>
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">TICKET ID</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">FROM</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">SUBJECT</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">STATUS</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {tickets.map((ticket, index) => (
-                <tr key={ticket.id} className={index > 0 ? 'border-t border-slate-200' : ''}>
-                  <td className="px-6 py-4 text-sm">
-                    <Link href={`/tickets/${ticket.id.split('-')[1]}`} className="text-blue-600 hover:text-blue-800 font-medium">
-                      {ticket.id}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-900">{ticket.from}</td>
-                  <td className="px-6 py-4 text-sm text-slate-900">{ticket.subject}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <Badge className={ticket.statusColor}>{ticket.status}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4 mb-4 z-10 relative">
+        <Select onValueChange={(val) => console.log('Role filter:', val)}>
+          <SelectTrigger className="w-[200px] border border-gray-300 bg-white">All Roles</SelectTrigger>
+          <SelectContent className="bg-white z-50">
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="vendor">Vendor</SelectItem>
+            <SelectItem value="customer">Customer</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Input
+          placeholder="Search..."
+          className="w-full md:w-1/3 border border-gray-300"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        <Button onClick={handleExport} className="bg-slate-600 hover:bg-slate-700 text-white cursor-pointer">
+          Export Excel
+        </Button>
       </div>
-  );
-};
 
-export default Tickets;
+      <div className="overflow-x-auto w-full">
+        <Table className="w-full border border-gray-200">
+         <TableHeader>
+          <TableRow className="border border-gray-200">
+            <TableHead onClick={() => handleSort('id')} className="cursor-pointer border border-gray-200">
+              TICKET ID <ArrowUpDown size={14} className="inline ml-1" />
+            </TableHead>
+            <TableHead className="border border-gray-200">FROM</TableHead>
+            <TableHead onClick={() => handleSort('subject')} className="cursor-pointer border border-gray-200">
+              SUBJECT <ArrowUpDown size={14} className="inline ml-1" />
+            </TableHead>
+            <TableHead className="border border-gray-200">TYPE</TableHead>
+            <TableHead onClick={() => handleSort('status')} className="cursor-pointer border border-gray-200">
+              STATUS <ArrowUpDown size={14} className="inline ml-1" />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredTickets.map((ticket) => (
+            <TableRow key={ticket.id} className="border border-gray-200">
+            <TableCell className="border border-gray-200">
+              <button
+                onClick={() => handleOpenModal(ticket)}
+                className="text-blue-600 font-medium hover:underline cursor-pointer"
+              >
+                TKT-{ticket.id}
+              </button>
+            </TableCell>
+              <TableCell className="border border-gray-200">{getFromLabel(ticket)}</TableCell>
+              <TableCell className="border border-gray-200">{ticket.subject}</TableCell>
+              <TableCell className="border border-gray-200">{ticket.type}</TableCell>
+              <TableCell className="border border-gray-200">{getStatusBadge(ticket.status)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex justify-between items-center mt-6">
+        <Button variant="ghost" className="text-sm cursor-pointer" onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
+          Previous
+        </Button>
+        <Button variant="ghost" className="text-sm cursor-pointer" onClick={() => setPage((p) => p + 1)}>Next</Button>
+      </div>
+      <TicketViewModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ticket={selectedTicket}
+        onStatusChange={handleStatusChange}
+      />
+
+    </div>
+    
+  );
+}
