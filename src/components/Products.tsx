@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductViewModal from "./ProductViewModal";
+import StatusModal from "@/components/StatusModal";
 
 const STATUS_COLORS = {
   APPROVED: "bg-green-100 text-green-700",
@@ -27,6 +28,22 @@ const STATUS_COLORS = {
   REJECTED: "bg-red-100 text-red-700",
   SUSPENDED: "bg-gray-200 text-gray-700",
 };
+
+interface ReviewImage {
+  id: number;
+  url: string;
+}
+
+interface Review {
+  id: number;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  user: {
+    username: string;
+  };
+  images: ReviewImage[];
+}
 
 interface Product {
   type: any;
@@ -41,17 +58,22 @@ interface Product {
       username: string;
     };
   };
-    category?: {
+  category?: {
     id: number;
     name: string;
   };
   defaultCommissionPct: number;
-  createdAt: string; 
+  createdAt: string;
   compliance: {
     id: number;
     type: string;
     fileUrl: string;
   }[];
+  images: {
+    id: number;
+    url: string;
+  }[];
+  reviews: Review[];
 }
 
 export default function Products() {
@@ -83,22 +105,21 @@ export default function Products() {
     fetchProducts();
   }, [page, limit, statusFilter, search]);
 
-
   const getSortableValue = (product: Product, key: string) => {
-      switch (key) {
-        case 'name':
-          return product.name.toLowerCase();
-        case 'category':
-          return product.category?.name.toLowerCase() || '';
-        case 'price':
-          return product.price;
-        case 'status':
-          return product.status.toLowerCase();
-        case 'vendor':
-          return product.vendor?.user?.username.toLowerCase() || '';
-        default:
-          return '';
-      }
+    switch (key) {
+      case 'name':
+        return product.name.toLowerCase();
+      case 'category':
+        return product.category?.name.toLowerCase() || '';
+      case 'price':
+        return product.price;
+      case 'status':
+        return product.status.toLowerCase();
+      case 'vendor':
+        return product.vendor?.user?.username.toLowerCase() || '';
+      default:
+        return '';
+    }
   };
 
   const sortedProducts = [...products].sort((a, b) => {
@@ -106,6 +127,8 @@ export default function Products() {
       switch (field) {
         case "name":
           return product.name;
+        case "stock":
+          return product.stock;
         case "price":
           return product.price;
         case "vendor":
@@ -125,12 +148,10 @@ export default function Products() {
     if (typeof aVal === "number" && typeof bVal === "number") {
       return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
     }
-    // Ensure both values are strings before comparing
     return sortOrder === "asc"
       ? String(aVal).localeCompare(String(bVal))
       : String(bVal).localeCompare(String(aVal));
   });
-
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
@@ -141,11 +162,19 @@ export default function Products() {
     }
   };
 
+  const handleStatusUpdate = (productId: number, newStatus: string) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId ? { ...p, status: newStatus } : p
+      )
+    );
+  };
+
   return (
     <div className="w-full p-6 bg-white">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Products</h1>
-       <Link href="/products/add">
+        <Link href="/products/add">
           <Button className="bg-slate-600 hover:bg-slate-700 text-white cursor-pointer">
             + Add New Product
           </Button>
@@ -178,48 +207,40 @@ export default function Products() {
         <Table className="w-full border border-gray-200 table-fixed">
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr className="divide-x divide-gray-200">
-          <th onClick={() => handleSort('name')} className="cursor-pointer px-4 py-2">
-            Product Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </th>
-          <th onClick={() => handleSort('category')} className="cursor-pointer px-4 py-2">
-            Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </th>
-          <th onClick={() => handleSort('vendor')} className="cursor-pointer px-4 py-2">
-            Vendor {sortBy === 'vendor' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </th>
-          <th onClick={() => handleSort('price')} className="cursor-pointer px-4 py-2">
-            Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </th>
-          <th className="px-4 py-2 text-center">Compliance</th>
-          <th onClick={() => handleSort('status')} className="cursor-pointer px-4 py-2">
-            Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </th>
+              <th onClick={() => handleSort('name')} className="cursor-pointer px-4 py-2">Product Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('category')} className="cursor-pointer px-4 py-2">Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('vendor')} className="cursor-pointer px-4 py-2">Vendor {sortBy === 'vendor' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('stock')} className="cursor-pointer px-4 py-2">Stock {sortBy === 'stock' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('price')} className="cursor-pointer px-4 py-2">Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th className="px-4 py-2 text-center">Compliance</th>
+              <th onClick={() => handleSort('status')} className="cursor-pointer px-4 py-2">Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
               <th className="px-4 py-2">Action</th>
             </tr>
           </thead>
           <TableBody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={7} className="text-center py-6 text-gray-500">
-                  Loading products...
-                </td>
+                <td colSpan={8} className="text-center py-6 text-gray-500">Loading products...</td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-6 text-gray-500">
-                  No products found.
-                </td>
+                <td colSpan={8} className="text-center py-6 text-gray-500">No products found.</td>
               </tr>
             ) : 
               sortedProducts.map((p) => (
                 <TableRow key={p.id} className="divide-x divide-gray-200">
                   <TableCell className="px-4 py-2 capitalize">
-                    <ProductViewModal product={p} />
+                    <Link
+                      href={`/products/${p.id}/view`}
+                      className="text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {p.name}
+                    </Link>
                   </TableCell>
-
                   <TableCell className="px-4 py-2 capitalize">{p.category?.name || <span className="text-gray-400 italic">N/A</span>}</TableCell>
                   <TableCell className="px-4 py-2 capitalize">{p.vendor.user.username}</TableCell>
-                   <TableCell className="px-4 py-2">₹{p.price}</TableCell>
+                  <TableCell className="px-4 py-2">{p.stock}</TableCell>
+                  <TableCell className="px-4 py-2">₹{p.price}</TableCell>
                   <TableCell className="px-4 py-2 text-center">
                     {p.compliance?.length > 0 ? (
                       <span className="text-green-600">MSDS ✓</span>
@@ -228,29 +249,36 @@ export default function Products() {
                     )}
                   </TableCell>
                   <TableCell className="px-4 py-2">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        STATUS_COLORS[p.status as keyof typeof STATUS_COLORS] || 'bg-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </TableCell>       
-                  <TableCell className="px-4 py-2">
-                    <Button variant="link" className={`text-sm ${p.status === "PENDING" ? "text-orange-500" : "text-blue-600"}`}>
-                      {p.status === "PENDING" ? "Review" : "View"}
-                    </Button>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[p.status as keyof typeof STATUS_COLORS] || 'bg-gray-200 text-gray-700'}`}>{p.status}</span>
                   </TableCell>
+                 <TableCell className="px-4 py-2">
+                  {(p.status === "PENDING" || p.status === "REJECTED") ? (
+                   <Link href={`/products/${p.id}/review`} passHref>
+                      <Button
+                        variant="outline"
+                        className="h-8 px-3 text-xs text-orange-600 border-orange-600 hover:bg-orange-50 cursor-pointer"
+                      >
+                        Review
+                      </Button>
+                    </Link>
+                  ) : (
+                    <StatusModal
+                      productId={p.id}
+                      currentStatus={p.status}
+                      onStatusChange={handleStatusUpdate}
+                    />
+                  )}
+                </TableCell>
+
                 </TableRow>
               ))}
           </TableBody>
         </Table>
 
-        {/* Pagination Controls */}
         <div className="flex justify-between items-center mt-4">
           <Button
             variant="ghost"
-            className="text-sm cursor-pointer"
+            className="bg-slate-100 border border-gray-300 text-slate-700 hover:bg-slate-200 cursor-pointer">
             disabled={page === 1}
             onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
           >
@@ -258,7 +286,7 @@ export default function Products() {
           </Button>
           <Button
             variant="ghost"
-            className="text-sm cursor-pointer"
+            className="bg-slate-100 border border-gray-300 text-slate-700 hover:bg-slate-200 cursor-pointer"
             disabled={page === totalPages}
             onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
           >

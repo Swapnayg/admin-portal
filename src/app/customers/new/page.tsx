@@ -24,8 +24,6 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from '@/theme/customizations';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -34,34 +32,7 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-interface EditCustomerPageProps {
-  params: { id: string };
-}
-
-
-interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  status: 'Active' | 'Inactive';
-}
-
-export default function EditCustomerPage({ params }: EditCustomerPageProps) {
-  const router = useRouter();
-  const id = Number(params.id);
-
-  const [customer, setCustomer] = useState<Customer | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/customers/get-customer?id=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setCustomer(data.customer);
-      })
-      .catch((err) => console.error('Error loading customer', err));
-  }, [id]);
-
+export default function Page() {
   return (
     <AppTheme themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
@@ -88,19 +59,7 @@ export default function EditCustomerPage({ params }: EditCustomerPageProps) {
             }}
           >
             <Header />
-            {customer && (
-              <CreateEditCustomer
-                initialData={{
-                  id: customer.id,
-                  name: customer.name,
-                  email: customer.email,
-                  phone: customer.phone ?? '',
-                  address: (customer as any).address ?? '',
-                  status: customer.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
-                }}
-                onSubmitSuccess={() => window.location.href = '/customers'}
-              />
-            )}
+            <CreateEditCustomer onSubmitSuccess={() => window.location.href = '/customers'} />
           </Stack>
         </Box>
       </Box>

@@ -1,4 +1,10 @@
-'use client';
+"use client";
+
+import ProductViewModal from '@/components/ProductViewModal';
+import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import * as React from 'react';
 import type {} from '@mui/x-date-pickers/themeAugmentation';
@@ -16,8 +22,6 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import VendorProfile from '@/components/VendorProfile';
-
 import {
   chartsCustomizations,
   dataGridCustomizations,
@@ -32,7 +36,42 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-export default function Page() {
+interface ReviewPageProps {
+  params: { id: string };
+}
+
+export default function ReviewPage({ params }: ReviewPageProps) {
+  const router = useRouter();
+  const id = Number(params.id);
+
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isNaN(id)) {
+      router.push('/not-found');
+      return;
+    }
+
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(`/api/products/get-product?id=${id}`);
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+        setProduct(data);
+      } catch (err) {
+        router.push('/not-found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id, router]);
+
+  if (loading) return <div className="text-center mt-10">Loading...</div>;
+
   return (
     <AppTheme themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
@@ -59,7 +98,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <VendorProfile/>
+           <ProductViewModal product={product} />
           </Stack>
         </Box>
       </Box>

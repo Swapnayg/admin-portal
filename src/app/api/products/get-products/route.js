@@ -1,5 +1,3 @@
-// File: /app/api/products/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -25,12 +23,13 @@ export async function GET(req) {
       where.OR = [
         { name: { contains: search } },
         { description: { contains: search } },
-        { category: { name: { contains: search} } },
+        { category: { name: { contains: search } } },
         { vendor: { user: { username: { contains: search } } } },
         ...(isNaN(numericSearch)
           ? []
           : [
-              { price: numericSearch }, // exact match on number
+              { price: numericSearch },
+              { stock: numericSearch },
             ]),
       ];
     }
@@ -44,6 +43,12 @@ export async function GET(req) {
         category: true,
         compliance: true,
         images: true,
+        reviews: {
+          include: {
+            user: { select: { username: true } },
+            images: true, // Include review images
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

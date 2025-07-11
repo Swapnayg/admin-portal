@@ -1,130 +1,151 @@
+'use client';
 
-import React, { useState } from 'react';
-import Link from "next/link";
-import { Button } from '@/components/ui/button';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Plus, Eye, Edit } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
-const Customers = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+interface Customer {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  status: 'Active' | 'Inactive';
+}
 
-  const customers = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@email.com',
-      phone: '9999999999',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@email.com',
-      phone: '8888888888',
-      status: 'Active'
-    },
-    {
-      id: 3,
-      name: 'Robert Johnson',
-      email: 'robert@email.com',
-      phone: '7777777777',
-      status: 'Active'
-    },
-    {
-      id: 4,
-      name: 'Emily Davis',
-      email: 'emily@email.com',
-      phone: '6666666666',
-      status: 'Active'
+
+export default function CustomersPage() {
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState<'name' | 'email' | 'phone' | 'status'>('name');
+  const [sortAsc, setSortAsc] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const pageSize = 5;
+
+  useEffect(() => {
+    fetch('/api/customers')
+      .then(res => res.json())
+      .then(data => {
+        setCustomers(data.customers);
+      })
+      .catch(err => console.error('Error loading customers', err));
+}, []);
+
+
+  const filtered = useMemo(() => {
+    let result = [...customers];
+
+    if (search.trim()) {
+      result = result.filter((c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.email.toLowerCase().includes(search.toLowerCase()) ||
+        c.phone.includes(search) ||
+        c.status.toLowerCase().includes(search.toLowerCase())
+      );
     }
-  ];
+
+    result.sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortAsc ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortAsc ? aValue - bValue : bValue - aValue;
+      }
+      return 0;
+    });
+    return result;
+  }, [search, sortField, sortAsc]);
+
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
 
   return (
-      <div className="max-w-full w-full px-6 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-slate-900">Customers</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 bg-slate-50 border-slate-200"
-              />
-            </div>
-            <Button variant="outline" className="text-slate-600 border-slate-200 hover:bg-slate-50">
-              <Filter size={16} className="mr-2" />
-              Filter
-            </Button>
-            <Button asChild className="bg-slate-900 text-white hover:bg-slate-800">
-              <Link href="/customers/create">
-                <Plus size={16} className="mr-2" />
-                Add Customer
-              </Link>
-            </Button>
-          </div>
-        </div>
+    <div className="p-6 w-full bg-white rounded shadow">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-semibold text-slate-800">Customers</h1>
+        <Link href="/customers/new">
+          <Button className="bg-slate-800 text-white hover:bg-slate-700 cursor-pointer">+ Add Customer</Button>
+        </Link>
+      </div>
 
-        {/* Customers Table */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Name</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Email</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Phone</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Actions</th>
+      <div className="flex justify-end mb-4">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search customers..."
+          className="w-80 border border-gray-300"
+        />
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border border-gray-200">
+          <thead className="bg-gray-50 text-slate-700">
+            <tr>
+              <th className="px-4 py-2 text-left cursor-pointer" onClick={() => {
+                setSortField('name'); setSortAsc(sortField === 'name' ? !sortAsc : true);
+              }}>Name {sortField === 'name' && (sortAsc ? '↑' : '↓')}</th>
+              <th className="px-4 py-2 text-left cursor-pointer" onClick={() => {
+                setSortField('email'); setSortAsc(sortField === 'email' ? !sortAsc : true);
+              }}>Email {sortField === 'email' && (sortAsc ? '↑' : '↓')}</th>
+              <th className="px-4 py-2 text-left cursor-pointer" onClick={() => {
+                setSortField('phone'); setSortAsc(sortField === 'phone' ? !sortAsc : true);
+              }}>Phone {sortField === 'phone' && (sortAsc ? '↑' : '↓')}</th>
+              <th className="px-4 py-2 text-left cursor-pointer" onClick={() => {
+                setSortField('status'); setSortAsc(sortField === 'status' ? !sortAsc : true);
+              }}>Status {sortField === 'status' && (sortAsc ? '↑' : '↓')}</th>
+              <th className="px-4 py-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((cust) => (
+              <tr key={cust.id} className="border-t border-gray-200">
+                <td className="px-4 py-2 font-medium text-slate-700">{cust.name}</td>
+                <td className="px-4 py-2">{cust.email}</td>
+                <td className="px-4 py-2">{cust.phone}</td>
+                <td className="px-4 py-2">
+                  <Badge className={cust.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                    {cust.status}
+                  </Badge>
+                </td>
+                <td className="px-4 py-2 space-x-2">
+                  <Button size="sm" className="bg-slate-100 text-slate-700 border border-gray-300 hover:bg-slate-200">View</Button>
+                  <Link href={`/customers/${cust.id}`}>
+                    <Button size="sm" className="bg-slate-800 text-white hover:bg-slate-700">Edit</Button>
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {customers.map((customer, index) => (
-                <tr key={customer.id} className={index > 0 ? 'border-t border-slate-200' : ''}>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="font-medium text-slate-900">{customer.name}</span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{customer.email}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{customer.phone}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <Badge className="bg-green-100 text-green-800">
-                      {customer.status}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" asChild className="border-slate-200 text-slate-600 hover:bg-slate-50">
-                        <Link href={`/customers/${customer.id}`}>
-                          <Eye size={14} className="mr-1" />
-                          View
-                        </Link>
-                      </Button>
-                      <Button size="sm" asChild className="bg-slate-900 text-white hover:bg-slate-800">
-                        <Link href={`/customers/edit/${customer.id}`}>
-                          <Edit size={14} className="mr-1" />
-                          Edit
-                        </Link>
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {/* Pagination */}
-          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
-            <span className="text-sm text-slate-600">Page 1 of 5</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled className="border-slate-200 text-slate-400">Prev</Button>
-              <Button variant="outline" size="sm" className="border-slate-200 text-slate-600 hover:bg-slate-50">Next</Button>
-            </div>
-          </div>
+            ))}
+            {paginated.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center py-6 text-slate-500">No customers found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex justify-between items-center mt-4 text-sm text-slate-600">
+        <div>
+          Showing {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="bg-slate-100 border border-gray-300 text-slate-700 hover:bg-slate-200">
+            Prev
+          </Button>
+          <Button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="bg-slate-100 border border-gray-300 text-slate-700 hover:bg-slate-200">
+            Next
+          </Button>
         </div>
       </div>
+    </div>
   );
-};
+}
 
-export default Customers;

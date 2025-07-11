@@ -1,154 +1,200 @@
+'use client';
 
-import React, { useState } from 'react';
-import { useRouter, useParams  } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Save } from 'lucide-react';
-import Link from "next/link";
+import { useState, useEffect, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 
-const CreateEditCustomer = () => {
-    const router = useRouter();
-    const params = useParams();
+type CustomerStatus = 'ACTIVE' | 'INACTIVE';
 
-    const id = params.id;  
+interface CustomerFormProps {
+  initialData?: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    status: CustomerStatus;
+  };
+  onSubmitSuccess: () => void;
+}
 
-  const isEdit = Boolean(id);
-  
+export default function CustomerForm({ initialData, onSubmitSuccess }: CustomerFormProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    name: isEdit ? 'John Doe' : '',
-    email: isEdit ? 'john@email.com' : '',
-    phone: isEdit ? '9999999999' : '',
-    status: isEdit ? 'Active' : 'Active',
-    address: isEdit ? '123 Main St, City, State' : '',
-    company: isEdit ? 'Tech Corp' : '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    status: 'ACTIVE' as CustomerStatus,
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        email: initialData.email || '',
+        phone: initialData.phone || '',
+        address: initialData.address || '',
+        status: initialData.status || 'ACTIVE',
+      });
+    }
+  }, [initialData]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required.';
+    if (!formData.email.trim()) newErrors.email = 'Email is required.';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required.';
+    if (!formData.address.trim()) newErrors.address = 'Address is required.';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('Saving customer:', formData);
-    router.push('/customers');
+    if (!validateForm()) return;
+    setLoading(true);
+    setAlert(null);
+
+    try {
+      const res = await fetch(
+        initialData
+          ? `/api/customers/update-customer?id=${initialData.id}`
+          : `/api/customers/create-customer`,
+        {
+          method: initialData ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!res.ok) throw new Error('Failed to submit');
+      setAlert({ type: 'success', message: `Customer ${initialData ? 'updated' : 'created'} successfully.` });
+      onSubmitSuccess();
+    } catch (err) {
+      console.error('Error:', err);
+      setAlert({ type: 'error', message: 'Error saving customer. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-      <div className="max-w-full w-full px-6 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link href="/customers">
-            <Button variant="ghost" className="text-slate-600 hover:text-slate-700 hover:bg-slate-50">
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Customers
-            </Button>
-          </Link>
-        </div>
+  <div className="w-full max-w-3xl mx-auto px-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white p-6 rounded-lg shadow-md space-y-4 w-full border border-gray-200"
+    >
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-xl font-semibold">
+        {initialData ? 'Edit Customer' : 'Add New Customer'}
+      </h2>
 
-        {/* Form */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h2 className="text-2xl font-semibold text-slate-900 mb-6">
-            {isEdit ? 'Edit Customer' : 'Add New Customer'}
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Full Name *
-                </label>
-                <Input
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="bg-slate-50 border-slate-200"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address *
-                </label>
-                <Input
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="bg-slate-50 border-slate-200"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number *
-                </label>
-                <Input
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="bg-slate-50 border-slate-200"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Status
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Company
-                </label>
-                <Input
-                  name="company"
-                  value={formData.company}
-                  onChange={handleInputChange}
-                  className="bg-slate-50 border-slate-200"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Address
-              </label>
-              <Input
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                className="bg-slate-50 border-slate-200"
-              />
-            </div>
-            
-            <div className="flex gap-3">
-              <Button type="submit" className="bg-slate-900 text-white hover:bg-slate-800">
-                <Save size={16} className="mr-2" />
-                {isEdit ? 'Update Customer' : 'Add Customer'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => router.push('/customers')} className="border-slate-200 text-slate-600 hover:bg-slate-50">
-                Cancel
-              </Button>
-            </div>
-          </form>
+      <button
+        type="button"
+        onClick={() => router.push('/customers')}
+        className="text-sm bg-gray-100 hover:bg-gray-200 text-slate-700 px-4 py-1.5 rounded border border-gray-300 cursor-pointer"
+      >
+        ← Back to Customers
+      </button>
+    </div>
+
+      {alert && (
+        <div
+          className={`p-3 rounded border text-sm ${
+            alert.type === 'success'
+              ? 'bg-green-100 border-green-300 text-green-700'
+              : 'bg-red-100 border-red-300 text-red-700'
+          }`}
+        >
+          {alert.message}
         </div>
+      )}
+
+      {/* Name */}
+      <div>
+        <label className="block font-medium mb-1">Name</label>
+        <input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded-md border-gray-300"
+        />
+        {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
       </div>
-  );
-};
 
-export default CreateEditCustomer;
+      {/* Email */}
+      <div>
+        <label className="block font-medium mb-1">Email</label>
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded-md border-gray-300"
+        />
+        {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
+      </div>
+
+      {/* Phone */}
+      <div>
+        <label className="block font-medium mb-1">Phone</label>
+        <input
+          type="text"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded-md border-gray-300"
+        />
+        {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
+      </div>
+
+      {/* Address */}
+      <div>
+        <label className="block font-medium mb-1">Address</label>
+        <input
+          type="text"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded-md border-gray-300"
+        />
+        {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
+      </div>
+
+      {/* Status */}
+      <div>
+        <label className="block font-medium mb-1">Status</label>
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white"
+        >
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-slate-700 text-white py-2 rounded-md hover:bg-slate-800 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? 'Saving...' : initialData ? 'Update Customer' : 'Add Customer'}
+      </button>
+    </form>
+    </div>
+  );
+}

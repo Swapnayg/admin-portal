@@ -33,6 +33,7 @@ model User {
   auditLogs     AuditLog[]
   passwordReset PasswordResetToken[]
   notification  Notification[]
+  reviews Review[]
 }
 
 enum Role {
@@ -130,7 +131,7 @@ model Product {
   vendorId             Int
   categoryId           Int?
   name                 String
-  description          String
+  description          String        @db.Text  // ← allows longer text
   price                Float
   status               ProductStatus @default(PENDING)
   compliance           Compliance[]
@@ -144,7 +145,30 @@ model Product {
   orderItems   OrderItem[]
   notification Notification[]
   images       ProductImage[]  
+  reviews Review[]
 }
+
+model Review {
+  id        Int          @id @default(autoincrement())
+  productId Int
+  userId    Int
+  rating    Int
+  comment   String       @db.Text
+  createdAt DateTime     @default(now())
+
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images    ReviewImage[]
+}
+
+model ReviewImage {
+  id        Int      @id @default(autoincrement())
+  reviewId  Int
+  url       String
+
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
 
 model ProductImage {
   id        Int      @id @default(autoincrement())
@@ -205,19 +229,21 @@ model Compliance {
 }
 
 model Order {
-  id               Int         @id @default(autoincrement())
+  id               Int              @id @default(autoincrement())
   customerId       Int
   vendorId         Int
-  shippingSnapshot Json?
-  status           OrderStatus @default(PENDING)
+  shippingSnapshot Json?           // snapshot of shipping address, lat/lng, etc.
+  status           OrderStatus     @default(PENDING)
   total            Float
-  createdAt        DateTime    @default(now())
+  createdAt        DateTime        @default(now())
 
-  customer     Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  vendor       Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  items        OrderItem[]
-  payment      Payment?
-  notification Notification[]
+  // Relations
+  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vendor           Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items            OrderItem[]
+  payment          Payment?
+  notification     Notification[]
+  trackingEvents   OrderTracking[]  // ⬅️ relation to tracking checkpoints
 }
 
 enum OrderStatus {
@@ -228,17 +254,31 @@ enum OrderStatus {
   CANCELLED
 }
 
-model OrderItem {
-  id            Int    @id @default(autoincrement())
-  orderId       Int
-  productId     Int
-  quantity      Int
-  price         Float // unit price
-  commissionPct Float? // commission percentage (e.g., 10.5 = 10.5%)
-  commissionAmt Float? // calculated: (price * quantity) * (commissionPct / 100)
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+model OrderItem {
+  id              Int     @id @default(autoincrement())
+  orderId         Int
+  productId       Int
+  quantity        Int
+  price           Float   // unit price
+  commissionPct   Float?  // optional: e.g. 10.5 = 10.5%
+  commissionAmt   Float?  // optional: pre-calculated (price * quantity * pct/100)
+
+  // Relations
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model OrderTracking {
+  id         Int         @id @default(autoincrement())
+  orderId    Int
+  status     OrderStatus        // e.g., SHIPPED, DELIVERED, etc.
+  message    String?            // optional status message
+  latitude   Float?             // GPS: can be null if not needed
+  longitude  Float?             // GPS: can be null if not needed
+  createdAt  DateTime    @default(now())
+
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -259,14 +299,16 @@ enum PaymentStatus {
 }
 
 model Payout {
-  id          Int          @id @default(autoincrement())
-  vendorId    Int
-  amount      Float
-  status      PayoutStatus @default(PENDING)
-  requestedAt DateTime     @default(now())
+  id               Int          @id @default(autoincrement())
+  vendorId         Int
+  amount           Float        // Total amount vendor is to be paid (after commission)
+  commissionAmount Float        // Platform's commission from the total sale
+  status           PayoutStatus @default(PENDING)
+  requestedAt      DateTime     @default(now())
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
+
 
 enum PayoutStatus {
   PENDING

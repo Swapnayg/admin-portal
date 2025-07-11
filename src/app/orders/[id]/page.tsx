@@ -1,4 +1,10 @@
-'use client';
+"use client";
+
+import OrderViewPage from '@/components/OrderView';
+import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import * as React from 'react';
 import type {} from '@mui/x-date-pickers/themeAugmentation';
@@ -16,16 +22,12 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import CreateEditCustomer from '@/components/CreateEditCustomer';
-
 import {
   chartsCustomizations,
   dataGridCustomizations,
   datePickersCustomizations,
   treeViewCustomizations,
 } from '@/theme/customizations';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -34,33 +36,13 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-interface EditCustomerPageProps {
+interface ReviewPageProps {
   params: { id: string };
 }
 
-
-interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  status: 'Active' | 'Inactive';
-}
-
-export default function EditCustomerPage({ params }: EditCustomerPageProps) {
+export default function ReviewPage({ params }: ReviewPageProps) {
   const router = useRouter();
   const id = Number(params.id);
-
-  const [customer, setCustomer] = useState<Customer | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/customers/get-customer?id=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setCustomer(data.customer);
-      })
-      .catch((err) => console.error('Error loading customer', err));
-  }, [id]);
 
   return (
     <AppTheme themeComponents={xThemeComponents}>
@@ -88,19 +70,7 @@ export default function EditCustomerPage({ params }: EditCustomerPageProps) {
             }}
           >
             <Header />
-            {customer && (
-              <CreateEditCustomer
-                initialData={{
-                  id: customer.id,
-                  name: customer.name,
-                  email: customer.email,
-                  phone: customer.phone ?? '',
-                  address: (customer as any).address ?? '',
-                  status: customer.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
-                }}
-                onSubmitSuccess={() => window.location.href = '/customers'}
-              />
-            )}
+           <OrderViewPage id={id} />
           </Stack>
         </Box>
       </Box>
