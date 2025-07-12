@@ -1,17 +1,8 @@
 "use client";
 
+import { use } from 'react';
 import OrderViewPage from '@/components/OrderView';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
-import * as React from 'react';
-import type {} from '@mui/x-date-pickers/themeAugmentation';
-import type {} from '@mui/x-charts/themeAugmentation';
-import type {} from '@mui/x-data-grid-pro/themeAugmentation';
-import type {} from '@mui/x-tree-view/themeAugmentation';
-
 import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
@@ -37,12 +28,12 @@ const xThemeComponents = {
 };
 
 interface ReviewPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function ReviewPage({ params }: ReviewPageProps) {
-  const router = useRouter();
-  const id = Number(params.id);
+  const { id } = use(params); // ✅ unwrap Promise
+  const numericId = Number(id);
 
   return (
     <AppTheme themeComponents={xThemeComponents}>
@@ -60,17 +51,9 @@ export default function ReviewPage({ params }: ReviewPageProps) {
             overflow: 'auto',
           })}
         >
-          <Stack
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              mx: 3,
-              pb: 5,
-              mt: { xs: 8, md: 0 },
-            }}
-          >
+          <Stack spacing={2} sx={{ alignItems: 'center', mx: 3, pb: 5, mt: { xs: 8, md: 0 } }}>
             <Header />
-           <OrderViewPage id={id} />
+            <OrderViewPage id={numericId} />
           </Stack>
         </Box>
       </Box>

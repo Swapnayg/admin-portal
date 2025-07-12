@@ -116,7 +116,14 @@ export default function CustomersPage() {
                   </Badge>
                 </td>
                 <td className="px-4 py-2 space-x-2">
-                  <Button size="sm" className="bg-slate-100 text-slate-700 border border-gray-300 hover:bg-slate-200">View</Button>
+                  <Link href={`/customers/${cust.id}/view`}>
+                    <Button
+                      size="sm"
+                      className="bg-slate-100 text-slate-700 border border-gray-300 hover:bg-slate-200 cursor-pointer"
+                    >
+                      View
+                    </Button>
+                  </Link>
                   <Link href={`/customers/${cust.id}/edit`}>
                     <Button size="sm" className="bg-slate-800 text-white hover:bg-slate-700 cursor-pointer">Edit</Button>
                   </Link>

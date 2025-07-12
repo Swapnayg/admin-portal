@@ -1,135 +1,182 @@
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Calendar } from "lucide-react";
+import { useState, useMemo, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { ArrowDown, ArrowUp } from 'lucide-react';
+import { parse, format } from 'date-fns';
+import { useRouter } from 'next/navigation'; 
 
-const payments = [
-  {
-    id: "#PAY001",
-    date: "2023-10-26",
-    amount: "₹ 1,500",
-    status: "Paid",
-    buyer: "Alice Johnson",
-    vendor: "Tech Innovations",
-  },
-  {
-    id: "#PAY002",
-    date: "2023-10-25",
-    amount: "₹ 800",
-    status: "Processing",
-    buyer: "Bob Williams",
-    vendor: "Fashion Hub",
-  },
-  {
-    id: "#PAY003",
-    date: "2023-10-24",
-    amount: "₹ 3,200",
-    status: "Paid",
-    buyer: "Charlie Brown",
-    vendor: "Home Essentials",
-  },
-  {
-    id: "#PAY004",
-    date: "2023-10-23",
-    amount: "₹ 450",
-    status: "Failed",
-    buyer: "Diana Prince",
-    vendor: "Book Nook",
-  },
-  {
-    id: "#PAY005",
-    date: "2023-10-22",
-    amount: "₹ 2,100",
-    status: "Paid",
-    buyer: "Eve Adams",
-    vendor: "Global Gadgets",
-  },
-];
+interface Payment {
+  id: string;
+  date: string;
+  amount: number;
+  status: 'Paid' | 'Refunded' | 'Failed';
+  buyer: string;
+  vendor: string;
+}
 
-export default function Payments() {
+export default function PaymentsDashboard() {
+  const router = useRouter();
+  const [search, setSearch] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [sortKey, setSortKey] = useState<keyof Payment>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const pageSize = 5;
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const res = await fetch('/api/payments/get-payments');
+        const data = await res.json();
+        setPayments(data);
+      } catch (error) {
+        console.error('Failed to fetch payments', error);
+      }
+    };
+
+    fetchPayments();
+  }, []);
+
+  // Inside filtered useMemo:
+  const filtered = useMemo(() => {
+    return payments
+      .filter((p) => {
+        const searchLower = search.toLowerCase();
+        const searchMatch =
+          p.id.toLowerCase().includes(searchLower) ||
+          p.date.toLowerCase().includes(searchLower) ||
+          p.amount.toString().includes(searchLower) ||
+          p.status.toLowerCase().includes(searchLower) ||
+          p.buyer.toLowerCase().includes(searchLower) ||
+          p.vendor.toLowerCase().includes(searchLower);
+
+        const dateMatch =
+          !selectedDate ||
+          format(parse(p.date, 'dd-MM-yyyy', new Date()), 'yyyy-MM-dd') === selectedDate;
+
+        return searchMatch && dateMatch;
+      })
+      .sort((a, b) => {
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+        if (typeof aVal === 'string' && typeof bVal === 'string') return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        return 0;
+      });
+  }, [search, selectedDate, sortKey, sortOrder, payments]);
+
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage]);
+
+  const toggleSort = (key: keyof Payment) => {
+    if (key === sortKey) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  };
+
+  const renderSortIcon = (key: keyof Payment) => {
+    if (sortKey !== key) return null;
+    return sortOrder === 'asc' ? <ArrowUp className="inline ml-1 w-3 h-3" /> : <ArrowDown className="inline ml-1 w-3 h-3" />;
+  };
+
   return (
-    <div className="max-w-full w-full px-6 py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Payments Overview</h1>
+    <div className="w-full px-6 py-4">
+      <h1 className="text-xl font-semibold text-slate-800 mb-4">Payments Overview</h1>
+
+      <div className="flex items-end gap-4 flex-wrap mb-4">
+        <Input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="w-48 border border-gray-300"
+        />
+        <Input
+          placeholder="Search payments"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-64 border border-gray-300 ml-auto"
+        />
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="dd-mm-yyyy"
-            className="pl-10 w-40 border border-gray-200 font-semibold"
-          />
-        </div>
-        <Button
-          variant="outline"
-          className="border border-gray-200 font-semibold"
-        >
-          Status
-        </Button>
-        <Button
-          variant="outline"
-          className="border border-gray-200 font-semibold"
-        >
-          Buyer
-        </Button>
-        <Button
-          variant="outline"
-          className="border border-gray-200 font-semibold"
-        >
-          Vendor
-        </Button>
-      </div>
-      {/* Payments Table */}
-      <Card className="border-none shadow-none">
-        <CardContent className="p-0 border border-none">
-          <div className="overflow-x-auto border border-gray-200">
-           <table className="w-full border-separate border-spacing-0">
-            <thead>
-              <tr className="bg-gray-100 border-b border-gray-300">
-                <th className="text-left p-4 font-medium text-gray-700">Payment ID</th>
-                <th className="text-left p-4 font-medium text-gray-700">Date</th>
-                <th className="text-left p-4 font-medium text-gray-700">Amount</th>
-                <th className="text-left p-4 font-medium text-gray-700">Status</th>
-                <th className="text-left p-4 font-medium text-gray-700">Buyer</th>
-                <th className="text-left p-4 font-medium text-gray-700">Vendor</th>
-                <th className="text-left p-4 font-medium text-gray-700">Action</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {payments.map((payment) => (
-                <tr
-                  key={payment.id}
-                  className="border-b border-gray-200 hover:bg-gray-50"
-                >
-                  <td className="p-4 font-medium text-gray-800">{payment.id}</td>
-                  <td className="p-4 text-gray-600">{payment.date}</td>
-                  <td className="p-4 font-medium text-gray-800">{payment.amount}</td>
-                  <td className="p-4">
-                    <StatusBadge status={payment.status} />
-                  </td>
-                  <td className="p-4 text-gray-600">{payment.buyer}</td>
-                  <td className="p-4 text-gray-600">{payment.vendor}</td>
-                  <td className="p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700"
+      <div className="border border-gray-300 rounded bg-white overflow-x-auto">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-gray-50 text-gray-600 font-semibold">
+            <tr>
+              <th className="cursor-pointer px-4 py-2" onClick={() => toggleSort('id')}>Payment ID {renderSortIcon('id')}</th>
+              <th className="cursor-pointer px-4 py-2" onClick={() => toggleSort('date')}>Date {renderSortIcon('date')}</th>
+              <th className="cursor-pointer px-4 py-2" onClick={() => toggleSort('amount')}>Amount {renderSortIcon('amount')}</th>
+              <th className="cursor-pointer px-4 py-2" onClick={() => toggleSort('status')}>Status {renderSortIcon('status')}</th>
+              <th className="cursor-pointer px-4 py-2" onClick={() => toggleSort('buyer')}>Buyer {renderSortIcon('buyer')}</th>
+              <th className="cursor-pointer px-4 py-2" onClick={() => toggleSort('vendor')}>Vendor {renderSortIcon('vendor')}</th>
+              <th className="px-4 py-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+           {paginated.map((payment) => {
+              // Extract clean numeric ID from formatted string like "#PAY001"
+              const cleanId = parseInt(payment.id.replace('#PAY', ''), 10); // safe even if id is already numeric
+
+              return (
+                <tr key={payment.id} className="border-t border-gray-300">
+                  <td className="px-4 py-2 font-medium text-slate-700">{payment.id}</td>
+                  <td className="px-4 py-2 text-slate-600">{payment.date}</td>
+                  <td className="px-4 py-2">₹ {payment.amount.toLocaleString()}</td>
+                  <td className="px-4 py-2">
+                    <Badge
+                      className={cn(
+                        'text-xs px-2 py-0.5 rounded',
+                        payment.status === 'Paid' && 'bg-green-100 text-green-700',
+                        payment.status === 'Refunded' && 'bg-yellow-100 text-yellow-700',
+                        payment.status === 'Failed' && 'bg-red-100 text-red-700'
+                      )}
                     >
-                      View
-                    </Button>
+                      {payment.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-2 capitalize">{payment.buyer}</td>
+                  <td className="px-4 py-2 capitalize">{payment.vendor}</td>
+                  <td
+                    className="px-4 py-2 text-blue-600 font-medium cursor-pointer"
+                    onClick={() => router.push(`/payments/${cleanId}/view`)}
+                  >
+                    View
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              );
+            })}
 
-          </div>
-        </CardContent>
-      </Card>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          variant="outline"
+          className="border border-gray-300"
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          className="border border-gray-300"
+          onClick={() => setCurrentPage((p) => (p * pageSize < filtered.length ? p + 1 : p))}
+          disabled={currentPage * pageSize >= filtered.length}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 }

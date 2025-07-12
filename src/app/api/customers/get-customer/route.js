@@ -16,7 +16,7 @@ export async function GET(req) {
         user: {
           select: {
             email: true,
-            status: true, // Assuming status is a string like 'ACTIVE' or 'INACTIVE'
+            isActive: true,
           },
         },
       },
@@ -26,13 +26,13 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
-    // Format to desired interface
     const formattedCustomer = {
       id: customer.id,
       name: customer.name,
       email: customer.user.email,
       phone: customer.phone,
-      status: customer.user.status === 'ACTIVE' ? 'Active' : 'Inactive',
+      address: customer.address, 
+      status: customer.user.isActive ? 'Active' : 'Inactive',
     };
 
     return NextResponse.json({ customer: formattedCustomer });

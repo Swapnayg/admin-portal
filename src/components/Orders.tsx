@@ -26,25 +26,19 @@ const statusColors: Record<string, string> = {
 
 const statusTabs = ['All Orders', 'Pending', 'Shipped', 'Delivered', 'Returned'];
 
-const dummyOrders: Order[] = Array.from({ length: 20 }, (_, i) => ({
-  id: 2400 + i,
-  createdAt: `2025-07-${(i % 30 + 1).toString().padStart(2, '0')}`,
-  customer: { name: `Customer ${i + 1}` },
-  vendor: { name: `Vendor ${i % 5 + 1}` },
-  status: ['PENDING', 'SHIPPED', 'DELIVERED', 'RETURNED', 'CANCELLED'][i % 5] as OrderStatus,
-  total: Math.floor(Math.random() * 5000 + 1000),
-}));
-
 export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Orders');
   const [sortField, setSortField] = useState<'id' | 'createdAt' | 'total' | 'customer' | 'vendor' | 'status'>('id');
   const [sortAsc, setSortAsc] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const pageSize = 10;
 
   const filteredOrders = useMemo(() => {
-    let filtered = [...dummyOrders];
+    let filtered = [...orders];
 
     if (statusFilter !== 'All Orders') {
       filtered = filtered.filter((o) => o.status === statusFilter.toUpperCase());
@@ -84,7 +78,7 @@ export default function OrdersPage() {
     });
 
     return filtered;
-  }, [search, statusFilter, sortField, sortAsc]);
+  }, [search, statusFilter, sortField, sortAsc, orders]);
 
   const paginatedOrders = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -101,6 +95,17 @@ export default function OrdersPage() {
       setSortAsc(true);
     }
   };
+
+  useEffect(() => {
+  fetch('/api/orders/get-orders')
+    .then(res => res.json())
+    .then(data => {
+      setOrders(data.orders);
+    })
+    .catch(err => console.error('Fetch orders error:', err))
+    .finally(() => setLoading(false));
+}, []);
+
 
   return (
     <div className="p-6 w-full bg-white rounded shadow">

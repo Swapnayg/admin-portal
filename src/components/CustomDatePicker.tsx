@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import { useForkRef } from '@mui/material/utils';
@@ -31,8 +33,14 @@ function ButtonField(props: ButtonFieldProps) {
       ref={handleRef}
       size="small"
       startIcon={<CalendarTodayRoundedIcon fontSize="small" />}
-      sx={{ minWidth: 'fit-content' }}
-      onClick={() => pickerContext.setOpen((prev) => !prev)}
+      sx={{
+        minWidth: 'fit-content',
+        backgroundColor: 'white',
+        borderColor: '#d1d5db', // light gray outline (gray-300)
+        color: 'black',
+        pointerEvents: 'none',
+        cursor: 'default',
+      }}
     >
       {pickerContext.label ?? valueStr}
     </Button>
@@ -40,20 +48,22 @@ function ButtonField(props: ButtonFieldProps) {
 }
 
 export default function CustomDatePicker() {
-  const [value, setValue] = React.useState<Dayjs | null>(dayjs('2023-04-17'));
+  const [value] = React.useState<Dayjs | null>(dayjs('2025-07-12')); // example static date
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DatePicker
         value={value}
-        label={value == null ? null : value.format('MMM DD, YYYY')}
-        onChange={(newValue) => setValue(newValue)}
+        label={value?.format('MMM DD, YYYY') ?? ''}
+        onChange={() => {}}
         slots={{ field: ButtonField }}
         slotProps={{
           nextIconButton: { size: 'small' },
           previousIconButton: { size: 'small' },
         }}
         views={['day', 'month', 'year']}
+        disableOpenPicker
+        readOnly
       />
     </LocalizationProvider>
   );

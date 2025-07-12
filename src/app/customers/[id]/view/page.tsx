@@ -16,7 +16,7 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import CustomerProfile from '@/components/CustomerProfile';
+import CustomerDashboard from '@/components/CustomerView';
 
 import {
   chartsCustomizations,
@@ -32,7 +32,14 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-export default function Page() {
+
+interface ViewCustomerPageProps {
+  params: { id: string };
+}
+
+export default function ViewCustomerPage({ params }: ViewCustomerPageProps) {
+  const id = Number(params.id);
+
   return (
     <AppTheme themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
@@ -59,7 +66,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <CustomerProfile/>
+            <CustomerDashboard customerId={id} />
           </Stack>
         </Box>
       </Box>

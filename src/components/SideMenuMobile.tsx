@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -16,6 +18,28 @@ interface SideMenuMobileProps {
 }
 
 export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
+  const [user, setUser] = React.useState<{ name: string; email: string } | null>(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/session');
+        if (!res.ok) throw new Error('Failed to fetch session');
+        const data = await res.json();
+        setUser({
+          name: data.name
+            .split(' ')
+            .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' '),
+          email: data.email,
+        });
+      } catch (err) {
+        console.error('Error loading session:', err);
+      }
+    };
+    fetchUser();
+  }, []);
+
   return (
     <Drawer
       anchor="right"
@@ -42,23 +66,33 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
           >
             <Avatar
               sizes="small"
-              alt="Riley Carter"
-              src="/static/images/avatar/7.jpg"
+              alt={user?.name || 'User'}
               sx={{ width: 24, height: 24 }}
-            />
-            <Typography component="p" variant="h6">
-              Riley Carter
+            >
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            </Avatar>
+
+           <Typography component="p" variant="h6">
+              {user?.name
+                ? user.name
+                    .split(' ')
+                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                    .join(' ')
+                : 'Loading...'}
             </Typography>
           </Stack>
           <MenuButton showBadge>
             <NotificationsRoundedIcon />
           </MenuButton>
         </Stack>
+
         <Divider />
+
         <Stack sx={{ flexGrow: 1 }}>
           <MenuContent />
           <Divider />
         </Stack>
+
         <Stack sx={{ p: 2 }}>
           <Button variant="outlined" fullWidth startIcon={<LogoutRoundedIcon />}>
             Logout

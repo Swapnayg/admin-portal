@@ -25,7 +25,7 @@ export async function PUT(req) {
       where: { id: customer.userId },
       data: {
         email,
-        status,
+        isActive: status === 'ACTIVE',
       },
     });
 

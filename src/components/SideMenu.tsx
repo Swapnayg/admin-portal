@@ -1,4 +1,7 @@
+'use client';
+
 import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Avatar from '@mui/material/Avatar';
 import MuiDrawer, { drawerClasses } from '@mui/material/Drawer';
@@ -11,7 +14,7 @@ import OptionsMenu from './OptionsMenu';
 
 const drawerWidth = 240;
 
-const Drawer = styled(MuiDrawer)({
+const Drawer = styled(MuiDrawer)(() => ({
   width: drawerWidth,
   flexShrink: 0,
   boxSizing: 'border-box',
@@ -20,9 +23,39 @@ const Drawer = styled(MuiDrawer)({
     width: drawerWidth,
     boxSizing: 'border-box',
   },
-});
+}));
+
+type SessionUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+};
+
+function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
 
 export default function SideMenu() {
+  const [user, setUser] = useState<SessionUser | null>(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await fetch('/api/session');
+        if (!res.ok) return;
+        const data = await res.json();
+        setUser(data);
+      } catch (error) {
+        console.error('Failed to fetch session user', error);
+      }
+    };
+    fetchSession();
+  }, []);
+
+  const displayName = user?.name ? capitalize(user.name) : 'Loading...';
+  const initial = user?.name ? user.name.charAt(0).toUpperCase() : '';
+
   return (
     <Drawer
       variant="permanent"
@@ -43,18 +76,15 @@ export default function SideMenu() {
           borderColor: 'divider',
         }}
       >
-        <Avatar
-          sizes="small"
-          alt="Riley Carter"
-          src="/static/images/avatar/7.jpg"
-          sx={{ width: 36, height: 36 }}
-        />
+        <Avatar sx={{ width: 36, height: 36 }}>
+          {initial}
+        </Avatar>
         <Box sx={{ mr: 'auto' }}>
           <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
-            Riley Carter
+            {displayName}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            riley@email.com
+            {user?.email || ''}
           </Typography>
         </Box>
         <OptionsMenu />

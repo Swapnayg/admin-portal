@@ -16,7 +16,7 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import Payments from '@/components/Payments';
+import PaymentsDashboard from '@/components/Payments';
 
 import {
   chartsCustomizations,
@@ -59,7 +59,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <Payments/>
+            <PaymentsDashboard/>
           </Stack>
         </Box>
       </Box>

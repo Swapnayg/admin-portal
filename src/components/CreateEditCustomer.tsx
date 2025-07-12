@@ -140,7 +140,12 @@ export default function CustomerForm({ initialData, onSubmitSuccess }: CustomerF
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="w-full px-4 py-2 border rounded-md border-gray-300"
+          readOnly={!!initialData}
+          className={`w-full px-4 py-2 border rounded-md ${
+            initialData
+              ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+              : 'border-gray-300'
+          }`}
         />
         {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
       </div>
@@ -153,7 +158,12 @@ export default function CustomerForm({ initialData, onSubmitSuccess }: CustomerF
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full px-4 py-2 border rounded-md border-gray-300"
+          readOnly={!!initialData}
+          className={`w-full px-4 py-2 border rounded-md ${
+            initialData
+              ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+              : 'border-gray-300'
+          }`}
         />
         {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
       </div>
