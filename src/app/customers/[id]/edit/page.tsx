@@ -48,7 +48,6 @@ interface Customer {
 }
 
 export default function EditCustomerPage({ params }: EditCustomerPageProps) {
-  const router = useRouter();
   const id = Number(params.id);
 
   const [customer, setCustomer] = useState<Customer | null>(null);

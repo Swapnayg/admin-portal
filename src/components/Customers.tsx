@@ -25,14 +25,13 @@ export default function CustomersPage() {
   const pageSize = 5;
 
   useEffect(() => {
-    fetch('/api/customers')
+    fetch('/api/customers/get-customers')
       .then(res => res.json())
       .then(data => {
         setCustomers(data.customers);
       })
       .catch(err => console.error('Error loading customers', err));
 }, []);
-
 
   const filtered = useMemo(() => {
     let result = [...customers];
@@ -57,8 +56,9 @@ export default function CustomersPage() {
       }
       return 0;
     });
+
     return result;
-  }, [search, sortField, sortAsc]);
+  }, [customers, search, sortField, sortAsc]); // ✅ Added `customers`
 
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -107,7 +107,7 @@ export default function CustomersPage() {
           <tbody>
             {paginated.map((cust) => (
               <tr key={cust.id} className="border-t border-gray-200">
-                <td className="px-4 py-2 font-medium text-slate-700">{cust.name}</td>
+                <td className="px-4 py-2 font-medium text-slate-700 capitalize">{cust.name}</td>
                 <td className="px-4 py-2">{cust.email}</td>
                 <td className="px-4 py-2">{cust.phone}</td>
                 <td className="px-4 py-2">
@@ -117,8 +117,8 @@ export default function CustomersPage() {
                 </td>
                 <td className="px-4 py-2 space-x-2">
                   <Button size="sm" className="bg-slate-100 text-slate-700 border border-gray-300 hover:bg-slate-200">View</Button>
-                  <Link href={`/customers/${cust.id}`}>
-                    <Button size="sm" className="bg-slate-800 text-white hover:bg-slate-700">Edit</Button>
+                  <Link href={`/customers/${cust.id}/edit`}>
+                    <Button size="sm" className="bg-slate-800 text-white hover:bg-slate-700 cursor-pointer">Edit</Button>
                   </Link>
                 </td>
               </tr>

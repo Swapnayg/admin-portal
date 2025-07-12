@@ -78,12 +78,23 @@ export default function CustomerForm({ initialData, onSubmitSuccess }: CustomerF
         }
       );
 
-      if (!res.ok) throw new Error('Failed to submit');
-      setAlert({ type: 'success', message: `Customer ${initialData ? 'updated' : 'created'} successfully.` });
+      const data = await res.json(); // ⬅️ parse response body
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit');
+      }
+      setAlert({
+        type: 'success',
+        message: `Customer ${initialData ? 'updated' : 'created'} successfully.`,
+      });
+
       onSubmitSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error:', err);
-      setAlert({ type: 'error', message: 'Error saving customer. Please try again.' });
+      setAlert({
+        type: 'error',
+        message: err.message || 'Error saving customer. Please try again.',
+      });
     } finally {
       setLoading(false);
     }

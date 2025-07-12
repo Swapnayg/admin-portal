@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { NextResponse, NextRequest } from 'next/server';
 
 export async function GET(req) {
@@ -9,7 +9,7 @@ export async function GET(req) {
         user: {
           select: {
             email: true,
-            status: true, // e.g., 'ACTIVE' | 'INACTIVE'
+            isActive: true, // correct field
           },
         },
       },
@@ -20,7 +20,7 @@ export async function GET(req) {
       name: cust.name,
       email: cust.user.email,
       phone: cust.phone,
-      status: cust.user.status === 'ACTIVE' ? 'Active' : 'Inactive',
+      status: cust.user.isActive ? 'Active' : 'Inactive', // corrected usage
     }));
 
     return NextResponse.json({ customers });
