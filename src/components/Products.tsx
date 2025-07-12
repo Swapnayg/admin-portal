@@ -278,7 +278,7 @@ export default function Products() {
         <div className="flex justify-between items-center mt-4">
           <Button
             variant="ghost"
-            className="bg-slate-100 border border-gray-300 text-slate-700 hover:bg-slate-200 cursor-pointer">
+            className="bg-slate-100 border border-gray-300 text-slate-700 hover:bg-slate-200 cursor-pointer"
             disabled={page === 1}
             onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
           >
