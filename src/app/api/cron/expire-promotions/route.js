@@ -6,6 +6,9 @@ export async function GET(req) {
   const url = new URL(req.url);
   const token = url.searchParams.get('secret');
 
+  console.log(token);
+  console.log(process.env.CRON_SECRET_TOKEN)
+
   // 🔐 Optional security check
   if (token !== process.env.CRON_SECRET_TOKEN) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
