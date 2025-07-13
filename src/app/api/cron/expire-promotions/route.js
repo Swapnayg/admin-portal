@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 
 export async function GET(req) {
   const url = new URL(req.url);
-  const token = url.searchParams.get('token');
+  const token = url.searchParams.get('secret');
 
   console.log("token");
   console.log(token);
