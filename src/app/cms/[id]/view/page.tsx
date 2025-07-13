@@ -16,7 +16,7 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import TemplateDetails from '@/components/TemplateDetails';
+import CMSViewPage from '@/components/CmsViewPage';
 
 import {
   chartsCustomizations,
@@ -59,7 +59,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <TemplateDetails/>
+            <CMSViewPage/>
           </Stack>
         </Box>
       </Box>

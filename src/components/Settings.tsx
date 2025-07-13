@@ -1,7 +1,9 @@
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, DollarSign, Plug, Mail } from "lucide-react";
+import Link from "next/link";
 
 const settingsItems = [
   {
@@ -9,24 +11,21 @@ const settingsItems = [
     title: "Role & Permissions",
     description: "Manage user roles and their access permissions within the platform.",
     action: "View Details",
+    link: "/roleManagement",
   },
   {
     icon: DollarSign,
-    title: "Tax & Commission Rules",
-    description: "Configure tax rates and commission structures for transactions.",
+    title: "Tax Rules",
+    description: "Configure tax rate structures for transactions.",
     action: "View Details",
+    link: "/ruleManagement",
   },
   {
     icon: Plug,
     title: "API Integrations",
     description: "Manage connections and settings for third-party API integrations.",
     action: "View Details",
-  },
-  {
-    icon: Mail,
-    title: "Notification Templates",
-    description: "Customize email and in-app notification templates.",
-    action: "View Details",
+    link: "/apiKeyManagement",
   },
 ];
 
@@ -56,20 +55,21 @@ export default function Settings() {
                   <p className="text-base text-gray-700 mb-4">
                     {item.description}
                   </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                  >
-                    {item.action}
-                  </Button>
+                  <Link href={item.link}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                    >
+                      {item.action}
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-
     </div>
   );
 }

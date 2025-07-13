@@ -16,7 +16,7 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import TemplateEditor from '@/components/TemplateEditor';
+import PromotionFormPage from '@/components/PromotionalAddEdit';
 
 import {
   chartsCustomizations,
@@ -59,7 +59,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <TemplateEditor/>
+            <PromotionFormPage/>
           </Stack>
         </Box>
       </Box>

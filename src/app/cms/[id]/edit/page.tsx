@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import type {} from '@mui/x-date-pickers/themeAugmentation';
+import { useParams } from 'next/navigation';
+import type {} from '@mui/x-data-grid/themeAugmentation'; 
 import type {} from '@mui/x-charts/themeAugmentation';
 import type {} from '@mui/x-data-grid-pro/themeAugmentation';
 import type {} from '@mui/x-tree-view/themeAugmentation';
+
 
 import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -15,7 +17,8 @@ import AppNavbar from '@/components/AppNavbar';
 import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
-import TemplateManagement from '@/components/TemplateManagement';
+
+import PageCMSForm from '@/components/CMSAddEdit';
 
 import {
   chartsCustomizations,
@@ -31,7 +34,8 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-export default function Page() {
+export default function PromotionFormWrapperPage() {
+
   return (
     <AppTheme themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
@@ -58,7 +62,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <TemplateManagement/>
+            <PageCMSForm/>
           </Stack>
         </Box>
       </Box>

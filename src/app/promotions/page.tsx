@@ -15,7 +15,7 @@ import AppNavbar from '@/components/AppNavbar';
 import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
-import Promotions from '@/components/Promotions';
+import PromotionsPage from '@/components/Promotions';
 
 import {
   chartsCustomizations,
@@ -58,7 +58,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <Promotions/>
+            <PromotionsPage/>
           </Stack>
         </Box>
       </Box>

@@ -1,113 +1,167 @@
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Plus, Edit } from "lucide-react";
-import Link from "next/link";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ChevronDown, ChevronUp, Plus, Eye, Pencil } from 'lucide-react';
 
-const pages = [
-  {
-    id: "safety",
-    title: "Industry Safety Guidelines",
-    slug: "/safety",
-    lastModified: "2 days ago",
-    status: "Published"
-  },
-  {
-    id: "terms",
-    title: "Terms and Conditions",
-    slug: "/terms",
-    lastModified: "1 week ago",
-    status: "Published"
-  },
-  {
-    id: "privacy",
-    title: "Privacy Policy",
-    slug: "/privacy",
-    lastModified: "3 days ago",
-    status: "Draft"
-  }
-];
+export default function CmsPageDashboard() {
+  const router = useRouter();
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('updatedAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(3);
+  const [filteredPages, setFilteredPages] = useState<any[]>([]);
+  const [allPages, setAllPages] = useState<any[]>([]);
 
-export default function PageSearch() {
+  useEffect(() => {
+    const fetchPages = async () => {
+      const res = await fetch(`/api/cms/get-cms`);
+      const result = await res.json();
+      if (res.ok) {
+        setAllPages(result.pages || []);
+      }
+    };
+    fetchPages();
+  }, []);
+
+  useEffect(() => {
+    const filtered = allPages.filter((page) => {
+      const modifiedStr = formatDistanceToNow(new Date(page.updatedAt), { addSuffix: true });
+      return (
+        page.title.toLowerCase().includes(search.toLowerCase()) ||
+        page.slug.toLowerCase().includes(search.toLowerCase()) ||
+        page.status.toLowerCase().includes(search.toLowerCase()) ||
+        modifiedStr.toLowerCase().includes(search.toLowerCase())
+      );
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      const aVal = a[sortBy as keyof typeof a];
+      const bVal = b[sortBy as keyof typeof b];
+      if (sortOrder === 'asc') return aVal > bVal ? 1 : -1;
+      return aVal < bVal ? 1 : -1;
+    });
+
+    setPage(1);
+    setFilteredPages(sorted);
+  }, [allPages, search, sortBy, sortOrder]);
+
+  const totalPages = Math.ceil(filteredPages.length / perPage);
+  const paginatedPages = filteredPages.slice((page - 1) * perPage, page * perPage);
+
+  const handleSort = (field: string) => {
+    if (field === sortBy) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (field !== sortBy) return null;
+    return sortOrder === 'asc' ? <ChevronUp className="inline w-3 h-3 ml-1" /> : <ChevronDown className="inline w-3 h-3 ml-1" />;
+  };
+
   return (
-    <div className="max-w-full w-full px-6 py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Pages</h1>
-        <Link href="/">
-          <Button className="gap-2 bg-slate-700 hover:bg-slate-800 text-white">
-            <Plus className="h-4 w-4" />
-            Create Page
+    <div className="p-4 w-full">
+      <div className="w-full space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-slate-800">CMS Pages</h1>
+          <Button className="bg-slate-700 hover:bg-slate-800 text-white cursor-pointer" onClick={() => router.push('/cms/create/edit')}>
+            <Plus className="w-4 h-4 mr-2" /> Create Page
           </Button>
-        </Link>
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-4  border-gray-200">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <Input
-          placeholder="Search pages..."
-          className="pl-10  border-gray-200"
-        />
-      </div>
-    <Card className="border border-gray-200">
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100 border-b border-gray-200">
-                <th className="text-left p-4 font-medium text-gray-600">Title</th>
-                <th className="text-left p-4 font-medium text-gray-600">Slug</th>
-                <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                <th className="text-left p-4 font-medium text-gray-600">Last Modified</th>
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {pages.map((page) => (
-                <tr
-                  key={page.id}
-                  className="border-b border-gray-200 hover:bg-gray-50"
-                >
-                  <td className="p-4 font-medium">{page.title}</td>
-                  <td className="p-4 text-gray-600">{page.slug}</td>
-                  <td className="p-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        page.status === "Published"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {page.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-gray-600">{page.lastModified}</td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <Link href={`/cms/editor/${page.id}`}>
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        View
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      </CardContent>
-    </Card>
 
+        <div className="flex justify-end">
+          <Input
+            placeholder="Search title, slug, status or modified..."
+            className="w-64 border border-gray-200"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="border border-gray-200 rounded-xl shadow bg-white pr-6">
+          <Table className="table-fixed w-full">
+            <TableHeader>
+              <TableRow className="bg-gray-100 border-b border-gray-200">
+                <TableHead onClick={() => handleSort('title')} className="w-1/5 cursor-pointer">
+                  Title {renderSortIcon('title')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('slug')} className="w-1/5 cursor-pointer">
+                  Slug {renderSortIcon('slug')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('status')} className="w-1/5 cursor-pointer">
+                  Status {renderSortIcon('status')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('updatedAt')} className="w-1/5 cursor-pointer">
+                  Last Modified {renderSortIcon('updatedAt')}
+                </TableHead>
+                <TableHead className="w-1/5 text-right pr-4">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedPages.length === 0 ? (
+                <TableRow className="border-b border-gray-200">
+                  <TableCell colSpan={5} className="text-center text-slate-500 py-6">
+                    No pages found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedPages.map((page: any) => (
+                  <TableRow key={page.id} className="border-b border-gray-200 hover:bg-slate-50">
+                    <TableCell className="w-1/5 truncate">{page.title}</TableCell>
+                    <TableCell className="w-1/5 truncate">{page.slug}</TableCell>
+                    <TableCell className="w-1/5">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          page.status === 'PUBLISHED'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}
+                      >
+                        {page.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="w-1/5 truncate">{formatDistanceToNow(new Date(page.updatedAt), { addSuffix: true })}</TableCell>
+                    <TableCell className="w-1/5 text-right pr-4 space-x-2">
+                      <Button size="icon" variant="ghost" className="cursor-pointer" onClick={() => router.push(`/cms/${page.id}/edit`)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="cursor-pointer" onClick={() => router.push(`/cms/${page.id}/view`)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" size="sm" className="cursor-pointer" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+            Prev
+          </Button>
+          <span className="text-slate-600 text-sm px-2 pt-1">Page {page} of {totalPages}</span>
+          <Button variant="outline" size="sm" className="cursor-pointer" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

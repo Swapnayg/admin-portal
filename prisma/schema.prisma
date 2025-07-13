@@ -34,7 +34,16 @@ model User {
   passwordReset PasswordResetToken[]
   notification  Notification[]
   reviews Review[]
+  usages       PromotionUsage[]
+  pages     Page[]  @relation("UserPages")  
 }
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 
 enum Role {
   ADMIN
@@ -244,6 +253,7 @@ model Order {
   payment          Payment?
   notification     Notification[]
   trackingEvents   OrderTracking[]  // ⬅️ relation to tracking checkpoints
+  usages       PromotionUsage[] 
 }
 
 enum OrderStatus {
@@ -386,11 +396,16 @@ model Report {
 }
 
 model Page {
-  id        Int      @id @default(autoincrement())
-  title     String
-  slug      String   @unique
-  content   String
-  updatedAt DateTime @updatedAt
+  id          Int           @id @default(autoincrement())
+  title       String
+  slug        String        @unique
+  content     String        @db.LongText // supports large HTML/Markdown content
+  status      ContentStatus @default(DRAFT)
+  author User @relation("UserPages", fields: [authorId], references: [id])
+  authorId    Int
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Promotion {
@@ -400,6 +415,44 @@ model Promotion {
   discount  Float
   validFrom DateTime
   validTo   DateTime
+  type      PromotionType
+  status    PromotionStatus
+
+  usages       PromotionUsage[] 
+}
+
+enum PromotionType {
+  COUPON         // Promotions applied via a code (can be platform-wide or vendor-specific)
+  CATEGORY       // Promotions targeting one or more product categories
+  PRODUCT        // Promotions applied to specific products
+  USER_GROUP     // Promotions targeted to a group (e.g. new users, VIPs)
+  VENDOR         // Promotions applicable to all products from a specific vendor
+  CART_VALUE     // Based on minimum cart value
+  FREE_SHIPPING  // Offers free shipping under conditions
+  BOGO           // Buy One Get One or similar bundle-based deals
+  SEASONAL       // Seasonal or festive promotions
+  FLASH_SALE     // Time-limited promotional offer
+}
+
+enum PromotionStatus {
+  ACTIVE
+  EXPIRED
+}
+
+model PromotionUsage {
+  id            Int        @id @default(autoincrement())
+  promotion     Promotion  @relation(fields: [promotionId], references: [id])
+  promotionId   Int
+  user          User       @relation(fields: [userId], references: [id])
+  userId        Int
+  usedAt        DateTime   @default(now())
+  amountSpent   Float      // Total order amount
+  benefit       Float      // Discount/benefit received from the promotion
+  commission    Float      // Commission platform earned from this order
+  order         Order?     @relation(fields: [orderId], references: [id])
+  orderId       Int?
+
+  @@unique([promotionId, userId]) // Enforces one-time use per user
 }
 
 model ApiKey {

@@ -1,117 +1,259 @@
+'use client';
 
-import React, { useState } from 'react';
-import Link from "next/link";
+import { useEffect, useState, useMemo } from 'react';
+import { format, parseISO } from 'date-fns';
+import { ArrowUpDown, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Eye, Edit } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ErrorDialog } from '@/components/ErrorDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const Promotions = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+// ✅ Corrected Union Type
+type PromotionType =
+  | 'COUPON'
+  | 'CATEGORY'
+  | 'PRODUCT'
+  | 'USER_GROUP'
+  | 'VENDOR'
+  | 'CART_VALUE'
+  | 'FREE_SHIPPING'
+  | 'BOGO'
+  | 'SEASONAL'
+  | 'FLASH_SALE';
 
-  const promotions = [
-    {
-      id: 1,
-      name: 'NewYear50',
-      type: 'Coupon',
-      status: 'Active',
-      validity: 'Till 31 Jan'
-    },
-    {
-      id: 2,
-      name: 'FlashSale',
-      type: 'Category',
-      status: 'Expired',
-      validity: 'Till 15 Mar'
-    },
-    {
-      id: 3,
-      name: 'SummerDiscount',
-      type: 'Product',
-      status: 'Active',
-      validity: 'Till 31 Aug'
-    },
-    {
-      id: 4,
-      name: 'LoyaltyBonus',
-      type: 'User Group',
-      status: 'Expired',
-      validity: 'Till 30 Apr'
+type PromotionStatus = 'ACTIVE' | 'EXPIRED';
+
+type Promotion = {
+  id: number;
+  title: string;
+  code: string;
+  discount: number;
+  validFrom: string;
+  validTo: string;
+  type: PromotionType;
+  status: PromotionStatus;
+};
+
+const promotionTypes: PromotionType[] = [
+  'COUPON',
+  'CATEGORY',
+  'PRODUCT',
+  'USER_GROUP',
+  'VENDOR',
+  'CART_VALUE',
+  'FREE_SHIPPING',
+  'BOGO',
+  'SEASONAL',
+  'FLASH_SALE',
+];
+
+const PromotionsPage = () => {
+  const router = useRouter();
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [sortBy, setSortBy] = useState<keyof Promotion>('title');
+  const [sortAsc, setSortAsc] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedType, setSelectedType] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    fetch('/api/promotions/get-promotions')
+      .then((res) => res.json())
+      .then((data: Promotion[]) => setPromotions(data))
+      .catch(() => {
+        setErrorMessage('Failed to load promotions');
+        setErrorDialogOpen(true);
+      });
+  }, []);
+
+  const filteredPromotions = useMemo(() => {
+    const cleanedSearch = search.toLowerCase().replace('%', '').trim();
+
+    return promotions
+      .filter((promo) => {
+        const discountNumber = Number(cleanedSearch);
+        const discountMatches = !isNaN(discountNumber) && promo.discount === discountNumber;
+
+        const matchesType = selectedType === "ALL" || promo.type === selectedType;
+
+        return (
+          matchesType &&
+          (
+            promo.title.toLowerCase().includes(cleanedSearch) ||
+            promo.code.toLowerCase().includes(cleanedSearch) ||
+            promo.type.toLowerCase().includes(cleanedSearch) ||
+            promo.status.toLowerCase().includes(cleanedSearch) ||
+            discountMatches ||
+            format(parseISO(promo.validFrom), 'dd MMM yyyy').toLowerCase().includes(cleanedSearch) ||
+            format(parseISO(promo.validTo), 'dd MMM yyyy').toLowerCase().includes(cleanedSearch)
+          )
+        );
+      })
+
+      .sort((a, b) => {
+        const aVal = a[sortBy];
+        const bVal = b[sortBy];
+
+        if (sortBy === 'validTo' || sortBy === 'validFrom') {
+          return sortAsc
+            ? new Date(aVal as string).getTime() - new Date(bVal as string).getTime()
+            : new Date(bVal as string).getTime() - new Date(aVal as string).getTime();
+        }
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortAsc ? aVal - bVal : bVal - aVal;
+        }
+
+        return 0;
+      });
+  }, [search, sortBy, sortAsc, promotions, selectedType]);
+
+  const totalPages = Math.ceil(filteredPromotions.length / itemsPerPage);
+  const paginated = filteredPromotions.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  const handleSort = (key: keyof Promotion) => {
+    if (sortBy === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(key);
+      setSortAsc(true);
     }
-  ];
+  };
 
   return (
-      <div className="max-w-full w-full px-6 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-slate-900">Promotions</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 bg-slate-50 border-slate-200"
-              />
-            </div>
-            <Button asChild className="bg-slate-900 text-white hover:bg-slate-800">
-              <Link href="/promotions/create">
-                <Plus size={16} className="mr-2" />
-                Create Promotion
-              </Link>
-            </Button>
+    <div className="p-6 space-y-6 w-full">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-slate-800">Promotions</h1>
+        <Link href="/promotions/add">
+          <Button className="bg-slate-700 hover:bg-slate-800 text-white cursor-pointer">+ Add Promotion</Button>
+        </Link>
+      </div>
+
+      <Card className="p-4 bg-white border border-gray-200 w-full shadow-sm">
+       <div className="flex justify-end items-center mb-4 gap-4">
+          <div className="w-64">
+            <Input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-10 bg-white text-black placeholder:text-slate-500 border border-gray-300"
+            />
+          </div>
+          <div className="w-56">
+            <Select onValueChange={setSelectedType} value={selectedType}>
+              <SelectTrigger className="w-full h-10 bg-white border border-gray-300 text-black z-50">
+                <SelectValue placeholder="Filter by Type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                <SelectItem value="ALL" className="bg-white text-black hover:bg-slate-100">
+                  All Types
+                </SelectItem>
+                {promotionTypes.map((type) => (
+                  <SelectItem
+                    key={type}
+                    value={type}
+                    className="bg-white text-black hover:bg-slate-100"
+                  >
+                    {type.replaceAll('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Promotions Table */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Name</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Type</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Validity</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {promotions.map((promotion, index) => (
-                <tr key={promotion.id} className={index > 0 ? 'border-t border-slate-200' : ''}>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="font-medium text-slate-900">{promotion.name}</span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{promotion.type}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <Badge className={promotion.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                      {promotion.status}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{promotion.validity}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" asChild className="border-slate-200 text-slate-600 hover:bg-slate-50">
-                        <Link href={`/promotions/${promotion.id}`}>
-                          <Eye size={14} className="mr-1" />
-                          View
-                        </Link>
+        <Table className="w-full border border-gray-200">
+          <TableHeader>
+            <TableRow className="bg-gray-100 border-b border-gray-200">
+              <TableHead onClick={() => handleSort('title')} className="cursor-pointer">Name <ArrowUpDown className="inline w-4 h-4" /></TableHead>
+              <TableHead onClick={() => handleSort('type')} className="cursor-pointer">Type <ArrowUpDown className="inline w-4 h-4" /></TableHead>
+              <TableHead onClick={() => handleSort('code')} className="cursor-pointer">Code <ArrowUpDown className="inline w-4 h-4" /></TableHead>
+              <TableHead onClick={() => handleSort('discount')} className="cursor-pointer">Discount % <ArrowUpDown className="inline w-4 h-4" /></TableHead>
+              <TableHead onClick={() => handleSort('validTo')} className="cursor-pointer">Validity <ArrowUpDown className="inline w-4 h-4" /></TableHead>
+              <TableHead onClick={() => handleSort('status')} className="cursor-pointer">Status <ArrowUpDown className="inline w-4 h-4" /></TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {paginated.map((promo) => {
+              const isExpired = promo.status === 'EXPIRED';
+              return (
+                <TableRow key={promo.id} className="border-b border-gray-200">
+                  <TableCell>{promo.title}</TableCell>
+                  <TableCell>{promo.type.replaceAll('_', ' ')}</TableCell>
+                  <TableCell>{promo.code}</TableCell>
+                  <TableCell>{promo.discount}%</TableCell>
+                  <TableCell>Till {format(parseISO(promo.validTo), 'dd MMM')}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 text-sm rounded-full ${isExpired ? 'bg-gray-200 text-gray-600' : 'bg-green-600 text-white'}`}>
+                      {promo.status.charAt(0) + promo.status.slice(1).toLowerCase()}
+                    </span>
+                  </TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button variant="ghost" size="sm" className="text-slate-700 cursor-pointer"
+                    onClick={() => router.push(`/promotions/${promo.id}/view`)}>
+                      <Eye className="w-4 h-4" /></Button>
+                    {!isExpired && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-700 cursor-pointer"
+                        onClick={() => router.push(`/promotions/${promo.id}/edit`)}
+                      >
+                        <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" asChild className="bg-slate-900 text-white hover:bg-slate-800">
-                        <Link href={`/promotions/edit/${promotion.id}`}>
-                          <Edit size={14} className="mr-1" />
-                          Edit
-                        </Link>
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+
+        <div className="flex justify-between mt-4 items-center text-slate-600">
+          <div>Page {page} of {totalPages}</div>
+          <div className="space-x-2">
+            <Button
+              variant="secondary"
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+              className="bg-slate-700 text-white hover:bg-slate-800"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page === totalPages}
+              className="bg-slate-700 text-white hover:bg-slate-800"
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
+
+      <ErrorDialog
+        open={errorDialogOpen}
+        onOpenChange={setErrorDialogOpen}
+        title="Failed to Load"
+        description={errorMessage}
+      />
+    </div>
   );
 };
 
-export default Promotions;
+export default PromotionsPage;
