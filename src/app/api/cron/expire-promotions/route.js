@@ -12,14 +12,16 @@ export async function GET(req) {
   }
 
   try {
+    console.log('🔁 Cron Job: Expire Promotions - Started');
+
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to midnight to ignore time
+    today.setHours(0, 0, 0, 0); // Midnight - only date comparison
 
     const result = await prisma.promotion.updateMany({
       where: {
         status: 'ACTIVE',
         validTo: {
-          lt: today, // Compare only date part
+          lt: today,
         },
       },
       data: {
@@ -27,13 +29,15 @@ export async function GET(req) {
       },
     });
 
+    console.log(`✅ Cron Job: Expire Promotions - Completed. Expired ${result.count} promotions.`);
+
     return NextResponse.json({
       message: 'Expired promotions updated successfully',
       updatedCount: result.count,
-      runDate: today.toISOString().split('T')[0], // Just the date
+      runDate: today.toISOString().split('T')[0],
     });
   } catch (error) {
-    console.error('Expire promotions cron error:', error);
+    console.error('❌ Cron Job: Expire Promotions - Error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
