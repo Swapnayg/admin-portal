@@ -460,9 +460,30 @@ model ApiKey {
   userId    Int
   name      String
   key       String   @unique
+  role       Role     // ← new field
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Rule {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      RuleType
+  value     Float    // Assuming % as a float, e.g., 20.0
+  status    RuleStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum RuleType {
+  TAX
+  COMMISSION
+}
+
+enum RuleStatus {
+  ACTIVE
+  INACTIVE
 }
 
 model ShippingAddress {

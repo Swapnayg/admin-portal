@@ -13,7 +13,7 @@ import Stack from '@mui/material/Stack';
 
 import AppNavbar from '@/components/AppNavbar';
 import Header from '@/components/Header';
-import MainGrid from '@/components/MainGrid';
+import AdminDashboardPage from '@/components/MainGrid';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
@@ -58,7 +58,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <MainGrid />
+            <AdminDashboardPage />
           </Stack>
         </Box>
       </Box>

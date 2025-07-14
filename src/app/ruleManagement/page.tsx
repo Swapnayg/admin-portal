@@ -16,7 +16,7 @@ import Header from '@/components/Header';
 import SideMenu from '@/components/SideMenu';
 import AppTheme from '@/theme/AppTheme';
 
-import RuleManagement from '@/components/RuleManagement';
+import RuleDashboard from '@/components/RuleManagement';
 import {
   chartsCustomizations,
   dataGridCustomizations,
@@ -58,7 +58,7 @@ export default function Page() {
             }}
           >
             <Header />
-            <RuleManagement/>
+            <RuleDashboard/>
           </Stack>
         </Box>
       </Box>
