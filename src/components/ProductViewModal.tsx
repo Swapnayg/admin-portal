@@ -83,8 +83,18 @@ export default function ProductView({ product }: ProductViewProps) {
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Price</p>
-          <p className="font-medium">₹{product.price}</p>
+          <p className="text-xs text-gray-500 mb-0.5">Base Price (₹)</p>
+          <p className="font-medium">₹{product.basePrice?.toFixed(2) ?? 'N/A'}</p>
+        </div>
+
+        <div>
+          <p className="text-xs text-gray-500 mb-0.5">Tax Rate (%)</p>
+          <p className="font-medium">{product.taxRate?.toFixed(2) ?? 'N/A'}%</p>
+        </div>
+
+        <div>
+          <p className="text-xs text-gray-500 mb-0.5">Price (₹)</p>
+          <p className="font-medium">₹{product.price?.toFixed(2) ?? 'N/A'}</p>
         </div>
 
         <div>
@@ -96,6 +106,8 @@ export default function ProductView({ product }: ProductViewProps) {
           <p className="text-xs text-gray-500 mb-0.5">Commission (%)</p>
           <p className="font-medium">{product.defaultCommissionPct}%</p>
         </div>
+
+
 
         <div>
           <p className="text-xs text-gray-500 mb-0.5">Status</p>

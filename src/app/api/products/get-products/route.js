@@ -23,12 +23,15 @@ export async function GET(req) {
       where.OR = [
         { name: { contains: search } },
         { description: { contains: search } },
-        { category: { name: { contains: search } } },
-        { vendor: { user: { username: { contains: search } } } },
+        { category: { name: { contains: search} } },
+        { vendor: { user: { username: { contains: search} } } },
         ...(isNaN(numericSearch)
           ? []
           : [
               { price: numericSearch },
+              { basePrice: numericSearch },
+              { taxRate: numericSearch },
+              { defaultCommissionPct: numericSearch },
               { stock: numericSearch },
             ]),
       ];
@@ -39,14 +42,16 @@ export async function GET(req) {
       skip,
       take: limit,
       include: {
-        vendor: { include: { user: { select: { username: true } } } },
+        vendor: {
+          include: { user: { select: { username: true } } },
+        },
         category: true,
         compliance: true,
         images: true,
         reviews: {
           include: {
             user: { select: { username: true } },
-            images: true, // Include review images
+            images: true,
           },
         },
       },

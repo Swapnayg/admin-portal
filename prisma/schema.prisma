@@ -14,15 +14,15 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String   @unique
-  password  String
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  username     String   @unique
+  password     String
   tempPassword String? // 👈 Store plain text password temporarily for email
-  role      Role     @default(CUSTOMER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role         Role     @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   vendor        Vendor?
   customer      Customer?
@@ -33,9 +33,9 @@ model User {
   auditLogs     AuditLog[]
   passwordReset PasswordResetToken[]
   notification  Notification[]
-  reviews Review[]
-  usages       PromotionUsage[]
-  pages     Page[]  @relation("UserPages")  
+  reviews       Review[]
+  usages        PromotionUsage[]
+  pages         Page[]               @relation("UserPages")
 }
 
 enum ContentStatus {
@@ -43,7 +43,6 @@ enum ContentStatus {
   PUBLISHED
   ARCHIVED
 }
-
 
 enum Role {
   ADMIN
@@ -140,44 +139,45 @@ model Product {
   vendorId             Int
   categoryId           Int?
   name                 String
-  description          String        @db.Text  // ← allows longer text
-  price                Float
+  description          String        @db.Text
+  basePrice            Float  @default(0)   // 💰 Price before tax
+  taxRate              Float  @default(0)   // 🧾 GST rate (e.g., 18 for 18%)
+  price                Float  @default(0)   // 💸 Calculated: basePrice + (basePrice * taxRate / 100)
   status               ProductStatus @default(PENDING)
-  compliance           Compliance[]
-  createdAt            DateTime      @default(now())
-  defaultCommissionPct Float? // Optional: default commission set by admin
-  // 🟢 Add this line:
+  defaultCommissionPct Float? // 🧾 Commission % for platform
   stock                Int           @default(0)
+  createdAt            DateTime      @default(now())
 
+  // Relations
   vendor       Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   category     ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  compliance   Compliance[]
   orderItems   OrderItem[]
   notification Notification[]
-  images       ProductImage[]  
-  reviews Review[]
+  images       ProductImage[]
+  reviews      Review[]
 }
 
 model Review {
-  id        Int          @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   productId Int
   userId    Int
   rating    Int
-  comment   String       @db.Text
-  createdAt DateTime     @default(now())
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
 
-  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  images    ReviewImage[]
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images  ReviewImage[]
 }
 
 model ReviewImage {
-  id        Int      @id @default(autoincrement())
-  reviewId  Int
-  url       String
+  id       Int    @id @default(autoincrement())
+  reviewId Int
+  url      String
 
-  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
-
 
 model ProductImage {
   id        Int      @id @default(autoincrement())
@@ -187,7 +187,6 @@ model ProductImage {
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
-
 
 model Notification {
   id        Int              @id @default(autoincrement())
@@ -238,22 +237,29 @@ model Compliance {
 }
 
 model Order {
-  id               Int              @id @default(autoincrement())
+  id               Int         @id @default(autoincrement())
   customerId       Int
   vendorId         Int
-  shippingSnapshot Json?           // snapshot of shipping address, lat/lng, etc.
-  status           OrderStatus     @default(PENDING)
-  total            Float
-  createdAt        DateTime        @default(now())
+  shippingSnapshot Json? // Address + lat/lng etc.
+  status           OrderStatus @default(PENDING)
+
+  subTotal       Float  @default(0) // sum of all item basePrices * qty
+  taxTotal       Float  @default(0) // sum of all item tax amounts
+  shippingCharge Float  @default(0) // Flat rate or dynamic
+  shippingTax    Float? @default(0) // if shipping also has GST
+  discount       Float? @default(0)  // if any promotion applied
+  total          Float  @default(0)  // subTotal + taxTotal + shippingCharge (+ shippingTax) - discount
+
+  createdAt DateTime @default(now())
 
   // Relations
-  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  vendor           Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  items            OrderItem[]
-  payment          Payment?
-  notification     Notification[]
-  trackingEvents   OrderTracking[]  // ⬅️ relation to tracking checkpoints
-  usages       PromotionUsage[] 
+  customer       Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vendor         Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items          OrderItem[]
+  payment        Payment?
+  notification   Notification[]
+  trackingEvents OrderTracking[]
+  usages         PromotionUsage[]
 }
 
 enum OrderStatus {
@@ -264,31 +270,34 @@ enum OrderStatus {
   CANCELLED
 }
 
-
 model OrderItem {
-  id              Int     @id @default(autoincrement())
-  orderId         Int
-  productId       Int
-  quantity        Int
-  price           Float   // unit price
-  commissionPct   Float?  // optional: e.g. 10.5 = 10.5%
-  commissionAmt   Float?  // optional: pre-calculated (price * quantity * pct/100)
+  id        Int   @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  basePrice Float @default(0) // per unit price (without tax)
+  taxRate   Float @default(0) // copied from Product.taxRate
+  taxAmount Float @default(0) // calculated: basePrice * quantity * taxRate / 100
+  price     Float @default(0) // total = (basePrice * quantity) + taxAmount
+
+  commissionPct Float? @default(0) // optional: e.g., 10.5 for 10.5%
+  commissionAmt Float? @default(0) // calculated: basePrice * quantity * commissionPct / 100
 
   // Relations
-  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model OrderTracking {
-  id         Int         @id @default(autoincrement())
-  orderId    Int
-  status     OrderStatus        // e.g., SHIPPED, DELIVERED, etc.
-  message    String?            // optional status message
-  latitude   Float?             // GPS: can be null if not needed
-  longitude  Float?             // GPS: can be null if not needed
-  createdAt  DateTime    @default(now())
+  id        Int         @id @default(autoincrement())
+  orderId   Int
+  status    OrderStatus // e.g., SHIPPED, DELIVERED, etc.
+  message   String? // optional status message
+  latitude  Float? // GPS: can be null if not needed
+  longitude Float? // GPS: can be null if not needed
+  createdAt DateTime    @default(now())
 
-  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -311,14 +320,13 @@ enum PaymentStatus {
 model Payout {
   id               Int          @id @default(autoincrement())
   vendorId         Int
-  amount           Float        // Total amount vendor is to be paid (after commission)
-  commissionAmount Float        // Platform's commission from the total sale
+  amount           Float // Total amount vendor is to be paid (after commission)
+  commissionAmount Float // Platform's commission from the total sale
   status           PayoutStatus @default(PENDING)
   requestedAt      DateTime     @default(now())
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
-
 
 enum PayoutStatus {
   PENDING
@@ -327,31 +335,30 @@ enum PayoutStatus {
 }
 
 model Ticket {
-  id          Int           @id @default(autoincrement())
-  subject     String
-  message     String
-  type        TicketType    @default(GENERAL)
-  status      TicketStatus  @default(OPEN)
+  id      Int          @id @default(autoincrement())
+  subject String
+  message String
+  type    TicketType   @default(GENERAL)
+  status  TicketStatus @default(OPEN)
 
   // Linked user types (optional)
-  userId      Int?          
-  vendorId    Int?
-  customerId  Int?
+  userId     Int?
+  vendorId   Int?
+  customerId Int?
 
   // Optional contact info for general users
-  name        String?       // for general/anonymous submissions
-  email       String?
+  name  String? // for general/anonymous submissions
+  email String?
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user        User?         @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
-  vendor      Vendor?       @relation("VendorTickets", fields: [vendorId], references: [id], onDelete: SetNull)
-  customer    Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user     User?     @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  vendor   Vendor?   @relation("VendorTickets", fields: [vendorId], references: [id], onDelete: SetNull)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
-  messages    Message[]     @relation("TicketMessages")
+  messages Message[] @relation("TicketMessages")
 }
-
 
 enum TicketType {
   GENERAL
@@ -359,16 +366,15 @@ enum TicketType {
   DOCUMENTS
   ACCOUNT_CLEARANCE
   REACTIVATE_ACCOUNT
-  REFUND_REQUEST         // customer-specific
-  ORDER_NOT_RECEIVED     // customer-specific
-  RETURN_ISSUE           // customer-specific
-  PAYMENT_ISSUE          // vendor/customer
-  PRODUCT_LISTING_ISSUE  // vendor-specific
+  REFUND_REQUEST // customer-specific
+  ORDER_NOT_RECEIVED // customer-specific
+  RETURN_ISSUE // customer-specific
+  PAYMENT_ISSUE // vendor/customer
+  PRODUCT_LISTING_ISSUE // vendor-specific
   INVENTORY_UPDATE_ISSUE // vendor-specific
-  SHIPPING_ISSUE         // vendor-specific
+  SHIPPING_ISSUE // vendor-specific
   SUPPORT
 }
-
 
 enum TicketStatus {
   OPEN
@@ -377,15 +383,15 @@ enum TicketStatus {
 }
 
 model Message {
-  id         Int       @id @default(autoincrement())
-  content    String
-  isAdmin    Boolean   @default(false)
-  ticketId   Int
-  userId     Int?
+  id       Int     @id @default(autoincrement())
+  content  String
+  isAdmin  Boolean @default(false)
+  ticketId Int
+  userId   Int?
 
-  ticket     Ticket    @relation("TicketMessages", fields: [ticketId], references: [id], onDelete: Cascade)
-  user       User?     @relation("UserMessages", fields: [userId], references: [id])
-  createdAt  DateTime  @default(now())
+  ticket    Ticket   @relation("TicketMessages", fields: [ticketId], references: [id], onDelete: Cascade)
+  user      User?    @relation("UserMessages", fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Report {
@@ -401,7 +407,7 @@ model Page {
   slug        String        @unique
   content     String        @db.LongText // supports large HTML/Markdown content
   status      ContentStatus @default(DRAFT)
-  author User @relation("UserPages", fields: [authorId], references: [id])
+  author      User          @relation("UserPages", fields: [authorId], references: [id])
   authorId    Int
   publishedAt DateTime?
   createdAt   DateTime      @default(now())
@@ -409,29 +415,29 @@ model Page {
 }
 
 model Promotion {
-  id        Int      @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   title     String
-  code      String   @unique
+  code      String          @unique
   discount  Float
   validFrom DateTime
   validTo   DateTime
   type      PromotionType
   status    PromotionStatus
 
-  usages       PromotionUsage[] 
+  usages PromotionUsage[]
 }
 
 enum PromotionType {
-  COUPON         // Promotions applied via a code (can be platform-wide or vendor-specific)
-  CATEGORY       // Promotions targeting one or more product categories
-  PRODUCT        // Promotions applied to specific products
-  USER_GROUP     // Promotions targeted to a group (e.g. new users, VIPs)
-  VENDOR         // Promotions applicable to all products from a specific vendor
-  CART_VALUE     // Based on minimum cart value
-  FREE_SHIPPING  // Offers free shipping under conditions
-  BOGO           // Buy One Get One or similar bundle-based deals
-  SEASONAL       // Seasonal or festive promotions
-  FLASH_SALE     // Time-limited promotional offer
+  COUPON // Promotions applied via a code (can be platform-wide or vendor-specific)
+  CATEGORY // Promotions targeting one or more product categories
+  PRODUCT // Promotions applied to specific products
+  USER_GROUP // Promotions targeted to a group (e.g. new users, VIPs)
+  VENDOR // Promotions applicable to all products from a specific vendor
+  CART_VALUE // Based on minimum cart value
+  FREE_SHIPPING // Offers free shipping under conditions
+  BOGO // Buy One Get One or similar bundle-based deals
+  SEASONAL // Seasonal or festive promotions
+  FLASH_SALE // Time-limited promotional offer
 }
 
 enum PromotionStatus {
@@ -440,17 +446,17 @@ enum PromotionStatus {
 }
 
 model PromotionUsage {
-  id            Int        @id @default(autoincrement())
-  promotion     Promotion  @relation(fields: [promotionId], references: [id])
-  promotionId   Int
-  user          User       @relation(fields: [userId], references: [id])
-  userId        Int
-  usedAt        DateTime   @default(now())
-  amountSpent   Float      // Total order amount
-  benefit       Float      // Discount/benefit received from the promotion
-  commission    Float      // Commission platform earned from this order
-  order         Order?     @relation(fields: [orderId], references: [id])
-  orderId       Int?
+  id          Int       @id @default(autoincrement())
+  promotion   Promotion @relation(fields: [promotionId], references: [id])
+  promotionId Int
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  usedAt      DateTime  @default(now())
+  amountSpent Float // Total order amount
+  benefit     Float // Discount/benefit received from the promotion
+  commission  Float // Commission platform earned from this order
+  order       Order?    @relation(fields: [orderId], references: [id])
+  orderId     Int?
 
   @@unique([promotionId, userId]) // Enforces one-time use per user
 }
@@ -460,20 +466,20 @@ model ApiKey {
   userId    Int
   name      String
   key       String   @unique
-  role       Role     // ← new field
+  role      Role // ← new field
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Rule {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String
   type      RuleType
-  value     Float    // Assuming % as a float, e.g., 20.0
+  value     Float // Assuming % as a float, e.g., 20.0
   status    RuleStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 enum RuleType {

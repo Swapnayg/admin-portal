@@ -9,6 +9,8 @@ export async function POST(req) {
     const {
       name,
       description,
+      basePrice,
+      taxRate,
       price,
       stock,
       defaultCommissionPct,
@@ -23,6 +25,8 @@ export async function POST(req) {
           data: {
             name,
             description,
+            basePrice,
+            taxRate,
             price,
             stock,
             defaultCommissionPct,
@@ -49,11 +53,11 @@ export async function POST(req) {
           });
         }
 
-        // Calculate payouts
-        const totalAmount = price * stock;
+        // Calculate payouts based on basePrice (not priceWithTax)
+        const totalBaseAmount = basePrice * stock;
         const commissionRate = defaultCommissionPct || 0;
-        const commissionAmount = parseFloat(((totalAmount * commissionRate) / 100).toFixed(2));
-        const vendorPayoutAmount = parseFloat((totalAmount - commissionAmount).toFixed(2));
+        const commissionAmount = parseFloat(((totalBaseAmount * commissionRate) / 100).toFixed(2));
+        const vendorPayoutAmount = parseFloat((totalBaseAmount - commissionAmount).toFixed(2));
 
         await tx.payout.create({
           data: {
@@ -74,6 +78,6 @@ export async function POST(req) {
     }
   } catch (error) {
     console.error('[CREATE_PRODUCT_ERROR]', error);
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to parse request' }, { status: 500 });
   }
 }

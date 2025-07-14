@@ -46,13 +46,15 @@ interface Review {
 }
 
 interface Product {
-  type: any;
   id: number;
   name: string;
   description: string;
   price: number;
+  basePrice: number;
+  taxRate: number;
   status: string;
   stock: number;
+  defaultCommissionPct: number;
   vendor: {
     user: {
       username: string;
@@ -62,8 +64,6 @@ interface Product {
     id: number;
     name: string;
   };
-  defaultCommissionPct: number;
-  createdAt: string;
   compliance: {
     id: number;
     type: string;
@@ -131,6 +131,12 @@ export default function Products() {
           return product.stock;
         case "price":
           return product.price;
+        case "basePrice":
+          return product.basePrice;
+        case "taxRate":
+          return product.taxRate;
+        case "commission":
+          return product.defaultCommissionPct;
         case "vendor":
           return product.vendor.user.username;
         case "category":
@@ -191,7 +197,7 @@ export default function Products() {
           />
 
           <Select onValueChange={setStatusFilter} value={statusFilter}>
-            <SelectTrigger className="w-48 border border-gray-300 bg-white">
+            <SelectTrigger className="w-48 border border-gray-300 bg-white cursor-pointer">
               {statusFilter === "ALL" ? "Filter by Status" : statusFilter}
             </SelectTrigger>
             <SelectContent className="bg-white">
@@ -211,7 +217,10 @@ export default function Products() {
               <th onClick={() => handleSort('category')} className="cursor-pointer px-4 py-2">Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
               <th onClick={() => handleSort('vendor')} className="cursor-pointer px-4 py-2">Vendor {sortBy === 'vendor' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
               <th onClick={() => handleSort('stock')} className="cursor-pointer px-4 py-2">Stock {sortBy === 'stock' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('basePrice')} className="cursor-pointer px-4 py-2">Base Price ₹ {sortBy === 'basePrice' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('taxRate')} className="cursor-pointer px-4 py-2">Tax % {sortBy === 'taxRate' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
               <th onClick={() => handleSort('price')} className="cursor-pointer px-4 py-2">Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+              <th onClick={() => handleSort('commission')} className="cursor-pointer px-4 py-2">Commission % {sortBy === 'commission' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
               <th className="px-4 py-2 text-center">Compliance</th>
               <th onClick={() => handleSort('status')} className="cursor-pointer px-4 py-2">Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
               <th className="px-4 py-2">Action</th>
@@ -240,7 +249,10 @@ export default function Products() {
                   <TableCell className="px-4 py-2 capitalize">{p.category?.name || <span className="text-gray-400 italic">N/A</span>}</TableCell>
                   <TableCell className="px-4 py-2 capitalize">{p.vendor.user.username}</TableCell>
                   <TableCell className="px-4 py-2">{p.stock}</TableCell>
+                  <TableCell className="px-4 py-2">₹{p.basePrice?.toFixed(2)}</TableCell>
+                  <TableCell className="px-4 py-2">{p.taxRate?.toFixed(2)}%</TableCell>
                   <TableCell className="px-4 py-2">₹{p.price}</TableCell>
+                  <TableCell className="px-4 py-2">{p.defaultCommissionPct?.toFixed(2)}%</TableCell>
                   <TableCell className="px-4 py-2 text-center">
                     {p.compliance?.length > 0 ? (
                       <span className="text-green-600">MSDS ✓</span>

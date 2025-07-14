@@ -23,7 +23,8 @@ export default function AddProductPage() {
   const [form, setForm] = useState({
     name: '',
     description: '',
-    price: '',
+    basePrice: '',
+    taxRate: '',
     stock: '',
     defaultCommissionPct: '',
     vendorId: '',
@@ -40,6 +41,11 @@ export default function AddProductPage() {
   const router = useRouter();
   const [images, setImages] = useState<File[]>([]);
   const [compliances, setCompliances] = useState<{ type: string; file: File | null }[]>([{ type: '', file: null }]);
+
+
+  const priceWithTax = +form.basePrice && +form.taxRate
+  ? (+form.basePrice * (1 + +form.taxRate / 100)).toFixed(2)
+  : '';
 
   const uploadImagesToCloudinary = async () => {
     const uploadedUrls: string[] = [];
@@ -99,8 +105,9 @@ export default function AddProductPage() {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = 'Product name is required';
     if (!form.description.trim()) newErrors.description = 'Description is required';
-    if (!form.price || isNaN(+form.price)) newErrors.price = 'Valid price is required';
     if (!form.stock || isNaN(+form.stock)) newErrors.stock = 'Valid stock is required';
+    if (!form.basePrice || isNaN(+form.basePrice)) newErrors.basePrice = 'Valid base price is required';
+    if (!form.taxRate || isNaN(+form.taxRate)) newErrors.taxRate = 'Valid tax rate is required';
     if (!form.defaultCommissionPct || isNaN(+form.defaultCommissionPct)) newErrors.defaultCommissionPct = 'Valid commission % is required';
     if (!form.vendorId) newErrors.vendorId = 'Vendor is required';
     if (!form.categoryId) newErrors.categoryId = 'Category is required';
@@ -125,8 +132,10 @@ export default function AddProductPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          price: +form.price,
           stock: +form.stock,
+          basePrice: +form.basePrice,
+          taxRate: +form.taxRate,
+          price: +priceWithTax,
           defaultCommissionPct: +form.defaultCommissionPct,
           vendorId: +form.vendorId,
           categoryId: +form.categoryId,
@@ -138,7 +147,7 @@ export default function AddProductPage() {
 
       if (!res.ok) throw res;
 
-      setForm({ name: '', description: '', price: '', stock: '', defaultCommissionPct: '', vendorId: '', categoryId: '' });
+      setForm({ name: '', description: '', basePrice: '', taxRate: '', stock: '', defaultCommissionPct: '', vendorId: '', categoryId: '' });
       setImages([]);
       setCompliances([{ type: '', file: null }]);
       setErrorMessage('Product created successfully!');
@@ -242,15 +251,39 @@ export default function AddProductPage() {
           {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
         </div>
 
+        {/* Base Price */}
+        <div>
+          <Label>Base Price (₹)</Label>
+          <Input
+            type="number"
+            value={form.basePrice}
+            onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
+            className={`border-gray-300 ${errors.basePrice ? 'border-red-500' : ''}`}
+          />
+          {errors.basePrice && <p className="text-red-500 text-sm mt-1">{errors.basePrice}</p>}
+        </div>
+
+        {/* Tax Rate */}
+        <div>
+          <Label>Tax Rate (%)</Label>
+          <Input
+            type="number"
+            value={form.taxRate}
+            onChange={(e) => setForm({ ...form, taxRate: e.target.value })}
+            className={`border-gray-300 ${errors.taxRate ? 'border-red-500' : ''}`}
+          />
+          {errors.taxRate && <p className="text-red-500 text-sm mt-1">{errors.taxRate}</p>}
+        </div>
+
         {/* Price */}
         <div>
           <Label>Price (₹)</Label>
-          <Input
-            type="number"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-            className={`border-gray-300 ${errors.price ? 'border-red-500' : ''}`}
-          />
+            <Input
+              type="text"
+              readOnly
+              value={priceWithTax}
+              className="bg-gray-100 border-gray-300"
+            />
           {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
         </div>
 

@@ -13,7 +13,11 @@ export async function GET(req) {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        vendor: { include: { user: { select: { username: true } } } },
+        vendor: {
+          include: {
+            user: { select: { username: true } }
+          }
+        },
         category: true,
         compliance: true,
         images: true,
@@ -30,7 +34,15 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json(product);
+    // Just to be sure the response explicitly includes these fields even if null
+    const fullProduct = {
+      ...product,
+      basePrice: product.basePrice ?? 0,
+      taxRate: product.taxRate ?? 0,
+      price: product.price ?? product.price, // fallback to price if not set
+    };
+
+    return NextResponse.json(fullProduct);
   } catch (error) {
     console.error('[PRODUCT_VIEW_ERROR]', error);
     return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });

@@ -28,7 +28,6 @@ export async function GET() {
     take: 5,
   });
 
-  console.log(notifications);
   const unreadCount = await prisma.notification.count({
     where: { adminId: admin.id, read: false },
   });
