@@ -19,6 +19,7 @@
     "seed": "ts-node prisma/seed.js"
   },
   "dependencies": {
+    "@chakra-ui/react": "^3.22.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.1.1",
@@ -82,6 +83,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "embla-carousel-react": "^8.6.0",
+    "framer-motion": "^12.23.5",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "input-otp": "^1.4.2",
