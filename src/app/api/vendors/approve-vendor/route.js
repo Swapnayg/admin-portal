@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { sendApprovalEmail } from '@/lib/vendor-mails';
-import { auth } from '@/lib/firebase-admin';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY // Use service key for admin actions
+);
 
 export async function POST(req) {
   try {
@@ -12,6 +17,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
     }
 
+    // Update vendor status
     const vendor = await prisma.vendor.update({
       where: { id: parseInt(id.toString()) },
       data: { status: 'APPROVED' },
@@ -23,30 +29,32 @@ export async function POST(req) {
     const password = vendor.user?.tempPassword;
 
     if (email && username && password) {
-      let userExists = false;
+      // Check if user already exists in Supabase
+      const { data: existingUsers, error: fetchError } = await supabaseAdmin.auth.admin.listUsers({
+        email
+      });
 
-      try {
-        await auth.getUserByEmail(email);
-        userExists = true;
-      } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-          userExists = false;
-        } else {
-          console.error('Firebase Auth Check Error:', error);
+      const userExists = existingUsers?.users?.some(u => u.email === email);
+
+      if (!userExists) {
+        // Create user in Supabase
+        const { data, error } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            displayName: username,
+            role: 'vendor',
+          },
+        });
+
+        if (error) {
+          console.error('Supabase createUser error:', error);
           throw error;
         }
       }
 
-      // ✅ Create only if not exists
-      if (!userExists) {
-        await auth.createUser({
-          email,
-          password,
-          displayName: username,
-        });
-      }
-
-      // ✅ Send approval email
+      // Send email
       await sendApprovalEmail(email, username, password);
     }
 

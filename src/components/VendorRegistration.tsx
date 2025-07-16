@@ -727,7 +727,7 @@ const VendorRegistration = () => {
                     type="button"
                     variant="outline" 
                     size="sm"
-                    className="text-xs border border-gray-300"
+                    className="text-xs border border-gray-300 cursor-pointer"
                     onClick={() => document.getElementById('panCard')?.click()}
                   >
                     Choose File
@@ -775,7 +775,7 @@ const VendorRegistration = () => {
                     type="button"
                     variant="outline" 
                     size="sm"
-                    className="text-xs border border-gray-300"
+                    className="text-xs border border-gray-300 cursor-pointer"
                     onClick={() => document.getElementById('gstCertificate')?.click()}
                   >
                     Choose File
@@ -823,7 +823,7 @@ const VendorRegistration = () => {
                     type="button"
                     variant="outline" 
                     size="sm"
-                    className="text-xs border border-gray-300"
+                    className="text-xs border border-gray-300 cursor-pointer"
                     onClick={() => document.getElementById('addressProof')?.click()}
                   >
                     Choose File
@@ -920,7 +920,7 @@ const VendorRegistration = () => {
                   variant="outline"
                   onClick={handlePrevious}
                   disabled={currentStep === 1}
-                  className="border-gray-400 text-gray-600 hover:bg-gray-200 disabled:opacity-50"
+                  className="border-gray-400 text-gray-600 hover:bg-gray-200 disabled:opacity-50 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Previous
@@ -929,13 +929,13 @@ const VendorRegistration = () => {
                 {currentStep < 3 ? (
                   <Button
                     onClick={handleNext}
-                    className="bg-slate-700 hover:bg-slate-800 text-white"
+                    className="bg-slate-700 hover:bg-slate-800 text-white cursor-pointer"
                   >
                     Next
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 ) : (
-                <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-slate-700 hover:bg-slate-800 text-white flex items-center justify-center" >
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-slate-700 hover:bg-slate-800 text-white flex items-center justify-center cursor-pointer" >
                     {isSubmitting ? (
                       <>
                         <svg

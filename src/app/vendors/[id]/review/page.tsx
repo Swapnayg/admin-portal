@@ -90,8 +90,8 @@ export default function reviewPage() {
           >
             <Header />
             {vendor && (
-              <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded shadow-lg">
-                <div className="flex justify-between items-center">
+              <div className="w-full p-6 space-y-6 bg-white rounded shadow-lg">
+                <div className="flex justify-between items-center w-full">
                   <h1 className="text-3xl font-bold text-gray-800">Review Vendor Application</h1>
                   <Link
                     href="/vendors"
