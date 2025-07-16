@@ -4,17 +4,17 @@ import prisma from '@/lib/prisma'; // make sure this points to your Prisma clien
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { email, tempPassword } = body;
+    const { email, password } = body;
 
-    if (!email || !tempPassword) {
+    if (!email || !password) {
       return NextResponse.json({ error: 'Email and temporary password are required' }, { status: 400 });
     }
 
-    // Find user by email and tempPassword
+    // Find user by email and password
     const user = await prisma.user.findFirst({
       where: {
         email,
-        tempPassword,
+        password,
       },
       select: {
         id: true,
