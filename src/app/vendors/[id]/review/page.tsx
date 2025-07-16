@@ -169,15 +169,29 @@ export default function reviewPage() {
                 </div>
 
                <div className="flex gap-4 mt-8 justify-end">
-                <form action="/api/vendors/approve-vendor" method="POST">
-                  <input type="hidden" name="id" value={vendor.id} />
-                  <Button
-                    type="submit"
-                    className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                  >
-                    Approve
-                  </Button>
-                </form>
+            <Button
+              onClick={async () => {
+                const formData = new FormData();
+                formData.append("id", vendor.id.toString());
+
+                const res = await fetch("/api/vendors/approve-vendor", {
+                  method: "POST",
+                  body: formData,
+                });
+
+                if (res.ok) {
+                  // Optionally reload the page or show a toast
+                  window.location.reload(); // or use router.refresh()
+                } else {
+                  const data = await res.json();
+                  alert(data.error || "Failed to approve vendor");
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+            >
+              Approve
+            </Button>
+
 
                 <form action="/api/vendors/reject-vendor" method="POST">
                   <input type="hidden" name="id" value={vendor.id} />
