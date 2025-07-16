@@ -13,92 +13,54 @@ export async function POST(req) {
     const body = await req.json();
     const { token, newPassword } = body;
 
-    console.log('📩 Incoming request body:', body);
-
     if (!token || !newPassword) {
-      console.warn('❗Missing token or newPassword');
       return NextResponse.json({ error: 'Token and new password are required' }, { status: 400 });
     }
 
     if (newPassword.length < 6) {
-      console.warn('❗Password too short');
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
     }
 
-    console.log('🔍 Looking up token in DB...');
     const record = await prisma.passwordResetToken.findUnique({
       where: { token },
       include: { user: true },
     });
 
-    if (!record) {
-      console.warn('❌ Token not found in DB');
+    if (!record || record.used || record.expiresAt < new Date()) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
     }
 
-    if (record.used) {
-      console.warn('❌ Token already used');
-      return NextResponse.json({ error: 'Token already used' }, { status: 400 });
-    }
-
-    if (record.expiresAt < new Date()) {
-      console.warn('❌ Token expired');
-      return NextResponse.json({ error: 'Token expired' }, { status: 400 });
-    }
-
-    console.log('👤 Found user for token:', record.user);
-
-    // 1. Update local DB password
     const hashed = await bcrypt.hash(newPassword, 10);
-    console.log('🔐 Updating password in Prisma...');
-    // await prisma.user.update({
-    //   where: { id: record.userId },
-    //   data: { password: hashed },
-    // });
+    await prisma.user.update({
+      where: { id: record.userId },
+      data: { password: hashed },
+    });
 
-    // 2. Update Supabase user password
-    // Step 2.1: Get Supabase user by email
-      const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
-        email: record.user.email,
-      });
-      console.log("users");
-      console.log(users);
+    const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+      email: record.user.email,
+    });
 
-      if (getUserError) {
-        console.error('❌ Error fetching user from Supabase:', getUserError);
-        return NextResponse.json({ error: 'Unable to find Supabase user by email' }, { status: 500 });
-      }
+    if (getUserError || !users || users.users.length === 0) {
+      return NextResponse.json({ error: 'Supabase user not found' }, { status: 404 });
+    }
 
-      if (!users || users.length === 0) {
-        console.warn('⚠️ No Supabase user found with email:', record.user.email);
-        return NextResponse.json({ error: 'Supabase user not found' }, { status: 404 });
-      }
+    const supabaseUserId = users.users[0].id;
+    const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+      password: newPassword,
+    });
 
-      const supabaseUserId = users[0].id;
+    if (supabaseError) {
+      return NextResponse.json({ error: 'Failed to update password in Supabase' }, { status: 500 });
+    }
 
-      // Step 2.2: Update Supabase password
-      const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-        password: newPassword,
-      });
-
-      if (supabaseError) {
-        console.error('🔥 Supabase update failed:', supabaseError);
-        return NextResponse.json({ error: 'Failed to update password in Supabase' }, { status: 500 });
-      }
-
-
-    // 3. Mark token used
-    console.log('✅ Marking token as used...');
     await prisma.passwordResetToken.update({
       where: { id: record.id },
       data: { used: true },
     });
 
-    console.log('🎉 Password reset successful');
     return NextResponse.json({ message: 'Password has been reset successfully' });
 
   } catch (err) {
-    console.error('💥 Unexpected server error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
