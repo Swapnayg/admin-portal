@@ -51,21 +51,41 @@ export async function POST(req) {
     // 1. Update local DB password
     const hashed = await bcrypt.hash(newPassword, 10);
     console.log('🔐 Updating password in Prisma...');
-    await prisma.user.update({
-      where: { id: record.userId },
-      data: { password: hashed },
-    });
+    // await prisma.user.update({
+    //   where: { id: record.userId },
+    //   data: { password: hashed },
+    // });
 
     // 2. Update Supabase user password
-    console.log('🔗 Updating password in Supabase for userId:', record.user.supabaseUserId);
-    const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(record.user.supabaseUserId, {
-      password: newPassword,
-    });
+    // Step 2.1: Get Supabase user by email
+      const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+        email: record.user.email,
+      });
+      console.log("users");
+      console.log(users);
 
-    if (supabaseError) {
-      console.error('🔥 Supabase update failed:', supabaseError);
-      return NextResponse.json({ error: 'Failed to update password in Supabase' }, { status: 500 });
-    }
+      if (getUserError) {
+        console.error('❌ Error fetching user from Supabase:', getUserError);
+        return NextResponse.json({ error: 'Unable to find Supabase user by email' }, { status: 500 });
+      }
+
+      if (!users || users.length === 0) {
+        console.warn('⚠️ No Supabase user found with email:', record.user.email);
+        return NextResponse.json({ error: 'Supabase user not found' }, { status: 404 });
+      }
+
+      const supabaseUserId = users[0].id;
+
+      // Step 2.2: Update Supabase password
+      const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+        password: newPassword,
+      });
+
+      if (supabaseError) {
+        console.error('🔥 Supabase update failed:', supabaseError);
+        return NextResponse.json({ error: 'Failed to update password in Supabase' }, { status: 500 });
+      }
+
 
     // 3. Mark token used
     console.log('✅ Marking token as used...');
