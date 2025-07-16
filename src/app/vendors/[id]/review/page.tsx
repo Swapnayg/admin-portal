@@ -180,8 +180,7 @@ export default function reviewPage() {
                     });
 
                     if (res.ok) {
-                      // Optionally reload the page or show a toast
-                      window.location.reload(); // or use router.refresh()
+                      router.back();
                     } else {
                       const data = await res.json();
                       alert(data.error || "Failed to approve vendor");
