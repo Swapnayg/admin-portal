@@ -86,7 +86,6 @@
     "dayjs": "^1.11.13",
     "embla-carousel-react": "^8.6.0",
     "file-saver": "^2.0.5",
-    "firebase-admin": "^13.4.0",
     "framer-motion": "^12.23.5",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
