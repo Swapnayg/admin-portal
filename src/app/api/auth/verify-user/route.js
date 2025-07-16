@@ -4,8 +4,11 @@ import prisma from '@/lib/prisma'; // make sure this points to your Prisma clien
 export async function POST(req) {
   try {
     const body = await req.json();
+    console.log(body);
     const { email, password } = body;
 
+    console.log(email);
+    console.log(password);
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and temporary password are required' }, { status: 400 });
     }
