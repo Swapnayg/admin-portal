@@ -25,7 +25,7 @@ export async function POST(req) {
       where: {
         email,
         tempPassword: password,
-        password: hashed, // ⚠️ This check likely won't work — see note below
+        //password: hashed, // ⚠️ This check likely won't work — see note below
       },
       select: {
         id: true,
