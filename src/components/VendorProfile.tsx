@@ -23,8 +23,8 @@ export default async function ViewVendorPage({ id }: Props) {
   if (!vendor) return notFound();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded shadow-lg">
-      <div className="flex justify-between items-center">
+    <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded shadow-lg w-full">
+      <div className="flex justify-between items-center w-full mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Vendor Details</h1>
         <Link
           href="/vendors"

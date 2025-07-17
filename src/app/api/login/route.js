@@ -15,7 +15,7 @@ export async function POST(req) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { admin: true, vendor: true, customer: true },
+      include: { admin: true },
     });
 
     if (!user || !user.isActive) {

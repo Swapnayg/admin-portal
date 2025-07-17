@@ -35,6 +35,7 @@ export default function ViewPage() {
   const id = Number(params?.id);
 
   const [vendor, setVendor] = useState<any | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -83,7 +84,7 @@ export default function ViewPage() {
           >
             <Header />
             {vendor && (
-              <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded shadow-lg">
+              <div className="w-full p-6 space-y-6 bg-white rounded shadow-lg">
                 <div className="flex justify-between items-center">
                   <h1 className="text-3xl font-bold text-gray-800">Vendor Details</h1>
                   <Link
@@ -163,19 +164,35 @@ export default function ViewPage() {
 
                 <div className="flex gap-4 mt-8 justify-end">
                   {vendor.status === "APPROVED" && (
-                    <form action="/api/vendors/suspend-vendor" method="POST">
+                    <form
+                      action="/api/vendors/suspend-vendor"
+                      method="POST"
+                      onSubmit={() => setIsProcessing(true)}
+                    >
                       <input type="hidden" name="id" value={id} />
-                      <Button type="submit" className="bg-purple-500 hover:bg-purple-600 text-white cursor-pointer">
-                        Suspend Vendor
+                      <Button
+                        type="submit"
+                        disabled={isProcessing}
+                        className="bg-purple-500 hover:bg-purple-600 text-white cursor-pointer"
+                      >
+                        {isProcessing ? "Suspending..." : "Suspend Vendor"}
                       </Button>
                     </form>
                   )}
 
                   {vendor.status === "SUSPENDED" && (
-                    <form action="/api/vendors/reactivate-vendor" method="POST">
+                    <form
+                      action="/api/vendors/reactivate-vendor"
+                      method="POST"
+                      onSubmit={() => setIsProcessing(true)}
+                    >
                       <input type="hidden" name="id" value={id} />
-                      <Button type="submit" className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white cursor-pointer">
-                        Reactivate Account
+                      <Button
+                        type="submit"
+                        disabled={isProcessing}
+                        className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white cursor-pointer"
+                      >
+                        {isProcessing ? "Reactivating..." : "Reactivate Account"}
                       </Button>
                     </form>
                   )}

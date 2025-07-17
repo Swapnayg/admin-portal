@@ -78,26 +78,31 @@ const VendorRegistration = () => {
   };
 
 
-  type UploadedFiles = {
-      panCard?: UploadedFileMeta;
-      gstCertificate?: UploadedFileMeta;
-      addressProof?: UploadedFileMeta;
-      [key: string]: UploadedFileMeta | undefined;
-  };
+type UploadedFiles = {
+  panCard?: UploadedFileMeta;
+  gstCertificate?: UploadedFileMeta;
+  addressProof?: UploadedFileMeta;
+  [key: string]: UploadedFileMeta | undefined;
+};
 
+const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({});
+const [fileErrors, setFileErrors] = useState({
+  panCard: '',
+  gstCertificate: '',
+  addressProof: '',
+});
 
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({});
+type FileUploadStatusType = "idle" | "uploading" | "success" | "error";
+const [fileUploadStatus, setFileUploadStatus] = useState<{
+  panCard: FileUploadStatusType;
+  gstCertificate: FileUploadStatusType;
+  addressProof: FileUploadStatusType;
+}>({
+  panCard: 'idle',
+  gstCertificate: 'idle',
+  addressProof: 'idle',
+});
 
-  const [fileErrors, setFileErrors] = useState({
-    panCard: '',
-    gstCertificate: '',
-    addressProof: '',
-  });
-  const [fileUploadStatus, setFileUploadStatus] = useState({
-    panCard: 'idle' as 'idle' | 'uploading' | 'success' | 'error',
-    gstCertificate: 'idle' as 'idle' | 'uploading' | 'success' | 'error',
-    addressProof: 'idle' as 'idle' | 'uploading' | 'success' | 'error',
-  });
   const [selectedDesignation, setSelectedDesignation] = useState('');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const { toast } = useToast();
@@ -167,8 +172,12 @@ const VendorRegistration = () => {
     
       // Validate required files
       let hasFileErrors = false;
-      const requiredFiles = ['panCard', 'gstCertificate', 'addressProof'] as const;
-      const newFileErrors = { panCard: '', gstCertificate: '', addressProof: '' };
+      const requiredFiles = ['panCard', 'addressProof'] as const;
+      const newFileErrors: { panCard: string;gstCertificate: string; addressProof: string } = { 
+        panCard: '', 
+        gstCertificate: '', 
+        addressProof: '' 
+      };
       
       requiredFiles.forEach(fileType => {
         if (!uploadedFiles[fileType]) {
@@ -210,8 +219,8 @@ const VendorRegistration = () => {
             
             // Uploaded Documents URLs from Cloudinary
             documents: {
-              panCardUrl: uploadedFiles.panCard?.url|| null,
-              gstCertificateUrl: uploadedFiles.gstCertificate?.url || null,
+              panCardUrl: uploadedFiles.panCard?.url || null,
+              gstCertificateUrl: uploadedFiles.gstCertificate?.url || null, // optional
               addressProofUrl: uploadedFiles.addressProof?.url || null,
             },
             
@@ -742,54 +751,6 @@ const VendorRegistration = () => {
               )}
             </div>
 
-            {/* GST Certificate Upload */}
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-medium text-sm flex items-center gap-2">
-                GST Certificate <span className="text-red-500">*</span>
-                {fileUploadStatus.gstCertificate === 'success' && (
-                  <Check className="w-4 h-4 text-green-500" />
-                )}
-              </Label>
-              <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors bg-white ${
-                fileErrors.gstCertificate ? 'border-red-300' : 
-                fileUploadStatus.gstCertificate === 'success' ? 'border-green-300 bg-green-50' :
-                'border-slate-300 hover:border-slate-400'
-              }`}>
-                <div className="flex flex-col items-center">
-                  {fileUploadStatus.gstCertificate === 'success' ? (
-                    <Check className="w-8 h-8 text-green-500 mb-2" />
-                  ) : (
-                    <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                  )}
-                  <p className="text-slate-600 text-sm mb-2">
-                    {uploadedFiles.gstCertificate ? uploadedFiles.gstCertificate.name : 'No file chosen'}
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => handleFileUpload('gstCertificate', e.target.files)}
-                    className="hidden"
-                    id="gstCertificate"
-                  />
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    size="sm"
-                    className="text-xs border border-gray-300 cursor-pointer"
-                    onClick={() => document.getElementById('gstCertificate')?.click()}
-                  >
-                    Choose File
-                  </Button>
-                </div>
-              </div>
-              {fileErrors.gstCertificate && (
-                <div className="flex items-center gap-1 text-red-500 text-xs">
-                  <AlertCircle className="w-3 h-3" />
-                  {fileErrors.gstCertificate}
-                </div>
-              )}
-            </div>
-
             {/* Address Proof Upload */}
             <div className="space-y-2">
               <Label className="text-slate-700 font-medium text-sm flex items-center gap-2">
@@ -836,6 +797,48 @@ const VendorRegistration = () => {
                   {fileErrors.addressProof}
                 </div>
               )}
+            </div>
+
+            {/* GST Certificate Upload */}
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium text-sm flex items-center gap-2">
+                GST Certificate
+                {fileUploadStatus.gstCertificate === 'success' && (
+                  <Check className="w-4 h-4 text-green-500" />
+                )}
+              </Label>
+              <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors bg-white ${
+                fileErrors.gstCertificate ? 'border-red-300' : 
+                fileUploadStatus.gstCertificate === 'success' ? 'border-green-300 bg-green-50' :
+                'border-slate-300 hover:border-slate-400'
+              }`}>
+                <div className="flex flex-col items-center">
+                  {fileUploadStatus.gstCertificate === 'success' ? (
+                    <Check className="w-8 h-8 text-green-500 mb-2" />
+                  ) : (
+                    <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                  )}
+                  <p className="text-slate-600 text-sm mb-2">
+                    {uploadedFiles.gstCertificate ? uploadedFiles.gstCertificate.name : 'No file chosen'}
+                  </p>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleFileUpload('gstCertificate', e.target.files)}
+                    className="hidden"
+                    id="gstCertificate"
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    className="text-xs border border-gray-300 cursor-pointer"
+                    onClick={() => document.getElementById('gstCertificate')?.click()}
+                  >
+                    Choose File
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

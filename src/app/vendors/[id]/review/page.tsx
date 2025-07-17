@@ -40,6 +40,8 @@ export default function reviewPage() {
     const id = Number(params?.id);
     
     const [vendor, setVendor] = useState<any | null>(null);
+    const [isApproving, setIsApproving] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
 
     useEffect(() => {
       if (!id) return;
@@ -170,36 +172,51 @@ export default function reviewPage() {
 
                <div className="flex gap-4 mt-8 justify-end">
                 <Button
+                  disabled={isApproving || isRejecting}
                   onClick={async () => {
-                    const formData = new FormData();
-                    formData.append("id", vendor.id.toString());
+                    setIsApproving(true);
+                    try {
+                      const formData = new FormData();
+                      formData.append("id", vendor.id.toString());
 
-                    const res = await fetch("/api/vendors/approve-vendor", {
-                      method: "POST",
-                      body: formData,
-                    });
+                      const res = await fetch("/api/vendors/approve-vendor", {
+                        method: "POST",
+                        body: formData,
+                      });
 
-                    if (res.ok) {
-                      router.back();
-                    } else {
-                      const data = await res.json();
-                      alert(data.error || "Failed to approve vendor");
+                      if (res.ok) {
+                        router.back();
+                      } else {
+                        const data = await res.json();
+                        alert(data.error || "Failed to approve vendor");
+                      }
+                    } catch (err) {
+                      alert("Something went wrong");
+                    } finally {
+                      setIsApproving(false);
                     }
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
                 >
-                  Approve
+                  {isApproving ? "Approving..." : "Approve"}
                 </Button>
-                <form action="/api/vendors/reject-vendor" method="POST">
+
+                <form
+                  action="/api/vendors/reject-vendor"
+                  method="POST"
+                  onSubmit={() => setIsRejecting(true)}
+                >
                   <input type="hidden" name="id" value={vendor.id} />
                   <Button
                     type="submit"
                     variant="destructive"
+                    disabled={isApproving || isRejecting}
                     className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
                   >
-                    Reject
+                    {isRejecting ? "Rejecting..." : "Reject"}
                   </Button>
                 </form>
+
               </div>
 
               </div>

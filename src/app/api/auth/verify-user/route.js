@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma'; // make sure this points to your Prisma client
+import bcrypt from 'bcryptjs';
 
 export async function POST(req) {
   try {
@@ -11,10 +12,13 @@ export async function POST(req) {
     }
 
     // Find user by email and password
+    const hashed = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.findFirst({
       where: {
         email,
         tempPassword:password,
+        password: hashed,
       },
       select: {
         id: true,
