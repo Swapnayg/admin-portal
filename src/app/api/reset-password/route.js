@@ -39,42 +39,44 @@ export async function POST(req) {
     }
 
     const userEmail = record.user.email;
+    const userRole = record.user.role;
 
     const hashed = await bcrypt.hash(newPassword, 10);
 
     await prisma.user.update({
       where: { id: record.userId },
-      data: { password: hashed, tempPassword: newPassword},
+      data: { password: hashed, tempPassword: newPassword },
     });
 
-    // Get all users (email filtering not supported by Supabase)
-    const { data, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
-      perPage: 1000,
-    });
+    if (userRole !== 'ADMIN') {
+      const { data, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+        perPage: 1000,
+      });
 
-    if (getUserError) {
-      return NextResponse.json({ error: 'Failed to fetch users from Supabase' }, { status: 500 });
+      if (getUserError) {
+        return NextResponse.json({ error: 'Failed to fetch users from Supabase' }, { status: 500 });
+      }
+
+      const matchedUser = data.users.find(
+        (user) => user.email?.toLowerCase() === userEmail.toLowerCase()
+      );
+
+      if (!matchedUser) {
+        return NextResponse.json({ error: 'Supabase user not found' }, { status: 404 });
+      }
+
+      const supabaseUserId = matchedUser.id;
+
+      const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(
+        supabaseUserId,
+        { password: newPassword }
+      );
+
+      if (supabaseError) {
+        return NextResponse.json({ error: 'Failed to update password in Supabase' }, { status: 500 });
+      }
     }
 
-    const matchedUser = data.users.find(
-      (user) => user.email?.toLowerCase() === userEmail.toLowerCase()
-    );
-
-    if (!matchedUser) {
-      return NextResponse.json({ error: 'Supabase user not found' }, { status: 404 });
-    }
-
-    const supabaseUserId = matchedUser.id;
-
-    const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-      password: newPassword,
-    });
-
-    if (supabaseError) {
-      return NextResponse.json({ error: 'Failed to update password in Supabase' }, { status: 500 });
-    }
-
-    // Optional: update DB to mark token as used
     await prisma.passwordResetToken.update({
       where: { id: record.id },
       data: { used: true },

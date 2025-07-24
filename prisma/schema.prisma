@@ -81,6 +81,7 @@ model Vendor {
   payouts      Payout[]
   tickets      Ticket[]       @relation("VendorTickets")
   notification Notification[]
+  bankAccount  BankAccount?    // One-to-one relation
 }
 
 enum VendorStatus {
@@ -88,6 +89,20 @@ enum VendorStatus {
   APPROVED
   REJECTED
   SUSPENDED
+}
+
+model BankAccount {
+  id             Int      @id @default(autoincrement())
+  vendorId       Int      @unique
+  accountHolder  String
+  accountNumber  String
+  ifscCode       String
+  bankName       String
+  branchName     String?
+  upiId          String?   // UPI ID (optional)
+  upiQrUrl       String?   // URL or path to QR scanner image
+  createdAt      DateTime  @default(now())
+  vendor         Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
 
 model PasswordResetToken {
