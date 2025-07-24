@@ -1,4 +1,5 @@
-import { NextApiRequest, NextApiResponse, NextApiHandler } from 'next';
+// lib/withRole.ts
+import { NextRequest, NextResponse } from 'next/server';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 interface DecodedToken extends JwtPayload {
@@ -7,33 +8,25 @@ interface DecodedToken extends JwtPayload {
   role: string;
 }
 
-interface AuthenticatedRequest extends NextApiRequest {
-  user?: DecodedToken;
-}
-
-export function withRoleApi(
-  handler: (req: AuthenticatedRequest, res: NextApiResponse) => void | Promise<void>,
-  allowedRoles: string[]
-): NextApiHandler {
-  return async (req: NextApiRequest, res: NextApiResponse) => {
+export function withRole(allowedRoles: string[], handler: (req: NextRequest, user: DecodedToken) => Promise<NextResponse>) {
+  return async (req: NextRequest) => {
     try {
-      const token = req.headers.authorization?.split(' ')[1];
+      const authHeader = req.headers.get('authorization') || '';
+      const token = authHeader.replace('Bearer ', '');
+
       if (!token) {
-        return res.status(401).json({ message: 'No token provided' });
+        return NextResponse.json({ message: 'No token provided' }, { status: 401 });
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as DecodedToken;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
       if (!allowedRoles.includes(decoded.role)) {
-        return res.status(403).json({ message: 'Access Denied' });
+        return NextResponse.json({ message: 'Access Denied' }, { status: 403 });
       }
 
-      // Cast req to AuthenticatedRequest to add `user` field
-      (req as AuthenticatedRequest).user = decoded;
-
-      return handler(req as AuthenticatedRequest, res);
-    } catch (error) {
-      return res.status(401).json({ message: 'Invalid token' });
+      return handler(req, decoded);
+    } catch (err) {
+      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
   };
 }

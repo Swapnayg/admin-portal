@@ -1,15 +1,10 @@
-import { withRoleApi } from '@/lib/withRoleApi';
+// app/api/app/vendor/testtapi/route.ts
+import { NextResponse, NextRequest } from 'next/server';
+import { withRole } from '@/lib/withRole';
 
-const handler = (req, res) => {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  // Access user injected by withRoleApi
-  res.status(200).json({
-    message: 'GET Access granted!',
-    user: req.user,
+export const GET = withRole(['VENDOR'], async (req, user) => {
+  return NextResponse.json({
+    message: 'Access granted for VENDOR!',
+    user,
   });
-};
-
-export default withRoleApi(handler, ['VENDOR']);
+});
