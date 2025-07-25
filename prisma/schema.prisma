@@ -36,6 +36,7 @@ model User {
   reviews       Review[]
   usages        PromotionUsage[]
   pages         Page[]               @relation("UserPages")
+  sentMessages  ChatMessage[]        @relation("UserSentMessages")
 }
 
 enum ContentStatus {
@@ -69,11 +70,11 @@ model Vendor {
   createdAt    DateTime     @default(now())
 
   categoryId Int?
-  zoneId     Int?
+  zoneId     Int? // Nullable
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   category VendorCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  zone     LocationZone?   @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  zone     LocationZone?   @relation(name: "ZoneToVendor", fields: [zoneId], references: [id], onDelete: SetNull)
 
   kycDocuments KYC[]
   products     Product[]
@@ -81,7 +82,11 @@ model Vendor {
   payouts      Payout[]
   tickets      Ticket[]       @relation("VendorTickets")
   notification Notification[]
-  bankAccount  BankAccount?    // One-to-one relation
+  chats        Chat[]
+  bankAccount  BankAccount? // One-to-one relation
+
+  // Reverse relation for one-to-one zone control
+  zoneOwner LocationZone? @relation(name: "VendorToZone")
 }
 
 enum VendorStatus {
@@ -92,17 +97,17 @@ enum VendorStatus {
 }
 
 model BankAccount {
-  id             Int      @id @default(autoincrement())
-  vendorId       Int      @unique
-  accountHolder  String
-  accountNumber  String
-  ifscCode       String
-  bankName       String
-  branchName     String?
-  upiId          String?   // UPI ID (optional)
-  upiQrUrl       String?   // URL or path to QR scanner image
-  createdAt      DateTime  @default(now())
-  vendor         Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id            Int      @id @default(autoincrement())
+  vendorId      Int      @unique
+  accountHolder String
+  accountNumber String
+  ifscCode      String
+  bankName      String
+  branchName    String?
+  upiId         String? // UPI ID (optional)
+  upiQrUrl      String? // URL or path to QR scanner image
+  createdAt     DateTime @default(now())
+  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
 
 model PasswordResetToken {
@@ -128,6 +133,7 @@ model Customer {
   tickets           Ticket[]
   shippingAddresses ShippingAddress[]
   notification      Notification[]
+  chats             Chat[]
 }
 
 model Admin {
@@ -155,9 +161,9 @@ model Product {
   categoryId           Int?
   name                 String
   description          String        @db.Text
-  basePrice            Float  @default(0)   // 💰 Price before tax
-  taxRate              Float  @default(0)   // 🧾 GST rate (e.g., 18 for 18%)
-  price                Float  @default(0)   // 💸 Calculated: basePrice + (basePrice * taxRate / 100)
+  basePrice            Float         @default(0) // 💰 Price before tax
+  taxRate              Float         @default(0) // 🧾 GST rate (e.g., 18 for 18%)
+  price                Float         @default(0) // 💸 Calculated: basePrice + (basePrice * taxRate / 100)
   status               ProductStatus @default(PENDING)
   defaultCommissionPct Float? // 🧾 Commission % for platform
   stock                Int           @default(0)
@@ -257,13 +263,15 @@ model Order {
   vendorId         Int
   shippingSnapshot Json? // Address + lat/lng etc.
   status           OrderStatus @default(PENDING)
+  trackingPartner  String?
+  trackingNumber   String?
 
   subTotal       Float  @default(0) // sum of all item basePrices * qty
   taxTotal       Float  @default(0) // sum of all item tax amounts
   shippingCharge Float  @default(0) // Flat rate or dynamic
   shippingTax    Float? @default(0) // if shipping also has GST
-  discount       Float? @default(0)  // if any promotion applied
-  total          Float  @default(0)  // subTotal + taxTotal + shippingCharge (+ shippingTax) - discount
+  discount       Float? @default(0) // if any promotion applied
+  total          Float  @default(0) // subTotal + taxTotal + shippingCharge (+ shippingTax) - discount
 
   createdAt DateTime @default(now())
 
@@ -349,6 +357,30 @@ enum PayoutStatus {
   REJECTED
 }
 
+model Chat {
+  id         Int      @id @default(autoincrement())
+  vendorId   Int
+  customerId Int
+  createdAt  DateTime @default(now())
+
+  vendor   Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@unique([vendorId, customerId]) // Prevent duplicate threads
+}
+
+model ChatMessage {
+  id       Int      @id @default(autoincrement())
+  chatId   Int
+  senderId Int
+  content  String
+  sentAt   DateTime @default(now())
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
 model Ticket {
   id      Int          @id @default(autoincrement())
   subject String
@@ -364,6 +396,9 @@ model Ticket {
   // Optional contact info for general users
   name  String? // for general/anonymous submissions
   email String?
+
+  // Optional file upload (image/pdf)
+  fileUrl     String? // <--- NEW field added
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -538,11 +573,16 @@ model ProductCategory {
 }
 
 model LocationZone {
-  id      Int      @id @default(autoincrement())
-  name    String   @unique
+  id      Int     @id @default(autoincrement())
+  name    String
   country String
   region  String?
-  vendors Vendor[]
+
+  vendorId Int    @unique
+  vendor   Vendor @relation(name: "VendorToZone", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  // Optional: list of vendors assigned to this zone
+  assignedVendors Vendor[] @relation(name: "ZoneToVendor")
 }
 
 model AuditLog {

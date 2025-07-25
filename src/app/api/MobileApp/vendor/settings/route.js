@@ -1,0 +1,70 @@
+import { withRole } from '@/lib/withRole';
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+
+export const POST = withRole(['VENDOR'], async (req, user) => {
+  try {
+    const vendorId = user.vendorId;
+
+    if (!vendorId) {
+      return NextResponse.json({ error: 'Vendor ID missing in token' }, { status: 400 });
+    }
+
+    const data = await req.json();
+    const {
+      accountHolder,
+      accountNumber,
+      ifscCode,
+      bankName,
+      branchName,
+      upiId,
+      upiQrUrl,
+    } = data;
+
+    // Check if bank details already exist for this vendor
+    const existing = await prisma.bankAccount.findUnique({
+      where: { vendorId },
+    });
+
+    if (existing) {
+      const updated = await prisma.bankAccount.update({
+        where: { vendorId },
+        data: {
+          accountHolder,
+          accountNumber,
+          ifscCode,
+          bankName,
+          branchName,
+          upiId,
+          upiQrUrl,
+        },
+      });
+
+      return NextResponse.json({
+        message: 'Bank details updated',
+        bankAccount: updated,
+      });
+    } else {
+      const created = await prisma.bankAccount.create({
+        data: {
+          vendorId,
+          accountHolder,
+          accountNumber,
+          ifscCode,
+          bankName,
+          branchName,
+          upiId,
+          upiQrUrl,
+        },
+      });
+
+      return NextResponse.json({
+        message: 'Bank details created',
+        bankAccount: created,
+      });
+    }
+  } catch (error) {
+    console.error('[POST /vendor/bank-account] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+});
