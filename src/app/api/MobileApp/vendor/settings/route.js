@@ -2,6 +2,29 @@ import { withRole } from '@/lib/withRole';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+// GET - Fetch bank details for the vendor
+export const GET = withRole(['VENDOR'], async (req, user) => {
+  try {
+    const vendorId = user.vendorId;
+
+    if (!vendorId) {
+      return NextResponse.json({ error: 'Vendor ID missing in token' }, { status: 400 });
+    }
+
+    const bankAccount = await prisma.bankAccount.findUnique({
+      where: { vendorId },
+    });
+
+    return NextResponse.json({
+      bankAccount,
+    });
+  } catch (error) {
+    console.error('[GET /vendor/bank-account] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+});
+
+// POST - Create or update bank details for the vendor
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
     const vendorId = user.vendorId;
@@ -21,7 +44,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       upiQrUrl,
     } = data;
 
-    // Check if bank details already exist for this vendor
+    // Check if bank details already exist
     const existing = await prisma.bankAccount.findUnique({
       where: { vendorId },
     });
