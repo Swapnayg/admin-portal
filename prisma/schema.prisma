@@ -68,6 +68,9 @@ model Vendor {
   designation  String?
   status       VendorStatus @default(PENDING)
   createdAt    DateTime     @default(now())
+  isActive       Boolean  @default(true)
+  deactivatedAt  DateTime? // Nullable timestamp when deactivation started
+
 
   categoryId Int?
   zoneId     Int? // Nullable
