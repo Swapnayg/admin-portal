@@ -265,17 +265,24 @@ model Order {
   id               Int         @id @default(autoincrement())
   customerId       Int
   vendorId         Int
-  shippingSnapshot Json? // Address + lat/lng etc.
+  shippingSnapshot Json?      // Address, lat/lng, etc.
   status           OrderStatus @default(PENDING)
-  trackingPartner  String?
-  trackingNumber   String?
 
-  subTotal       Float  @default(0) // sum of all item basePrices * qty
-  taxTotal       Float  @default(0) // sum of all item tax amounts
-  shippingCharge Float  @default(0) // Flat rate or dynamic
-  shippingTax    Float? @default(0) // if shipping also has GST
-  discount       Float? @default(0) // if any promotion applied
-  total          Float  @default(0) // subTotal + taxTotal + shippingCharge (+ shippingTax) - discount
+  // 🟡 New fields for Shiprocket integration
+  shiprocketOrderId     Int?       // From response after Shiprocket order creation
+  shiprocketShipmentId  Int?       // Specific shipment tracking
+  shiprocketLabelUrl    String?    // URL for label download
+  shiprocketManifestUrl String?    // Optional manifest if needed
+
+  trackingPartner  String?         // e.g., 'Shiprocket'
+  trackingNumber   String?         // Waybill number from Shiprocket
+
+  subTotal       Float  @default(0)
+  taxTotal       Float  @default(0)
+  shippingCharge Float  @default(0)
+  shippingTax    Float? @default(0)
+  discount       Float? @default(0)
+  total          Float  @default(0)
 
   createdAt DateTime @default(now())
 
@@ -318,11 +325,15 @@ model OrderItem {
 model OrderTracking {
   id        Int         @id @default(autoincrement())
   orderId   Int
-  status    OrderStatus // e.g., SHIPPED, DELIVERED, etc.
-  message   String? // optional status message
-  latitude  Float? // GPS: can be null if not needed
-  longitude Float? // GPS: can be null if not needed
+  status    OrderStatus // Your internal status enum
+  message   String?     // e.g., "In Transit", "Delivered"
+  latitude  Float?      // Optional GPS
+  longitude Float?
   createdAt DateTime    @default(now())
+
+  // 🟡 Optional: Store external provider status
+  externalStatus  String? // e.g., "Out for Delivery"
+  provider        String? // e.g., "Shiprocket"
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
