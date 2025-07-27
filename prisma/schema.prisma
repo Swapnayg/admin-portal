@@ -530,12 +530,13 @@ model ApiKey {
   id        Int      @id @default(autoincrement())
   userId    Int
   name      String
-  key       String   @unique
-  role      Role // ← new field
+  key       String   @db.Text
+  role      Role
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 
 model Rule {
   id        Int        @id @default(autoincrement())
