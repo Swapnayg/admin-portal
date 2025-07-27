@@ -39,17 +39,24 @@ export async function GET(req) {
 
     const shiprocketToken = authData.token;
 
-    // 🧹 Remove old token if any (global/shared token)
-    await prisma.apiKey.deleteMany({
-      where: {
-        name: 'shiprocket',
-      },
+    // 🧑‍💼 Get userId for admin email
+    const adminUser = await prisma.user.findUnique({
+      where: { email: 'infoswap90@gmail.com' },
     });
 
-    // 🆕 Save new token to api_key table (userId = 1 assumed for system/global token)
+    if (!adminUser) {
+      return NextResponse.json({ message: 'Admin user not found' }, { status: 404 });
+    }
+
+    // 🧹 Remove old Shiprocket API token
+    await prisma.apiKey.deleteMany({
+      where: { name: 'shiprocket' },
+    });
+
+    // 💾 Save new token
     const newToken = await prisma.apiKey.create({
       data: {
-        userId: 1, // System admin user or shared account
+        userId: adminUser.id,
         name: 'shiprocket',
         key: shiprocketToken,
         role: 'ADMIN',

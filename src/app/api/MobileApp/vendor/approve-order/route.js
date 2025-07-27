@@ -31,9 +31,18 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       );
     }
 
-    const token = process.env.SHIPROCKET_TOKEN;
+    // ✅ Fetch Shiprocket token from the api_key table
+    const tokenEntry = await prisma.apiKey.findFirst({
+      where: {
+        name: 'shiprocket',
+        role: 'ADMIN', // or whatever role is correct for the token
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const token = tokenEntry?.token;
     if (!token) {
-      return NextResponse.json({ error: 'Shiprocket token missing' }, { status: 500 });
+      return NextResponse.json({ error: 'Shiprocket token not found' }, { status: 500 });
     }
 
     const shipmentPayload = {
