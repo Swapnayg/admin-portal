@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { notifyAdmins } from '@/lib/notifications';
-import { notifyUser } from '@/lib/notifyUser'; // ✅ Your vendor notification function
+import { notifyUser } from '@/lib/notifications'; // ✅ Your vendor notification function
 
 export async function GET(req) {
   const url = new URL(req.url);
