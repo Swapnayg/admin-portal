@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import { prisma } from '@/lib/prisma';
+import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -87,6 +88,12 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         })),
       });
     }
+
+    await notifyAdmins(
+  "New Product Added",
+  `A new product has been added by ${vendorName} and is pending review.`,
+  "ADD_PRODUCT"
+);
 
     return NextResponse.json({
       success: true,

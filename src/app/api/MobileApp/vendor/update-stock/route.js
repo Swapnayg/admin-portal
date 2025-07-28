@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
+import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   const body = await req.json();
@@ -62,6 +63,12 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
     },
   });
+
+  await notifyAdmins(
+  "Stock Updated",
+  `The stock for product ${productName} was updated by ${vendorName}.`,
+  "UPDATE_PRODUCT_STOCK"
+);
 
   return NextResponse.json({
     success: true,

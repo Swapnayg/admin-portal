@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
+import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -35,6 +36,12 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         trackingNumber,
       },
     });
+
+    await notifyAdmins(
+  "Order Shipped",
+  `Order #${orderId} has been marked as shipped by ${vendorName}.`,
+  "ORDER_SHIPPED"
+);
 
     return NextResponse.json({
       message: 'Order marked as shipped successfully',

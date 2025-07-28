@@ -1,6 +1,7 @@
 import { withRole } from '@/lib/withRole';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -23,6 +24,12 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         fileUrl: fileUrl || null,
       },
     });
+await notifyAdmins(
+  "New Vendor Support Ticket",
+  `${vendorName} has submitted a support ticket: ${ticketTitle}.`,
+  "SUBMIT_TICKET"
+);
+
 
     return NextResponse.json({
       success: true,

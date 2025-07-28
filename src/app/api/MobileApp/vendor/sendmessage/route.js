@@ -1,6 +1,7 @@
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR', 'CUSTOMER'], async (req, user) => {
   const body = await req.json();
@@ -48,6 +49,12 @@ export const POST = withRole(['VENDOR', 'CUSTOMER'], async (req, user) => {
         },
       },
     });
+
+    await notifyAdmins(
+  "Message from Vendor",
+  `${vendorName} has sent a message: "${messageContent}".`,
+  "MESSAGE_FROM_VENDOR"
+);
 
     return NextResponse.json({
       success: true,

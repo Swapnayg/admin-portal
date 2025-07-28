@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 import axios from 'axios';
+import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -100,6 +101,13 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         message: `Shipped via ${courier_name || 'Shiprocket'} (AWB: ${awb_code})`,
       },
     });
+
+    await notifyAdmins(
+  "Vendor Approved",
+  `Vendor ${vendorName} has been approved.`,
+  "VENDOR_APPROVED"
+);
+
 
     return NextResponse.json({
       message: 'Order approved and shipped via Shiprocket',
