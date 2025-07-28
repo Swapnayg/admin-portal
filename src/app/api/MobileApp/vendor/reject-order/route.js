@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 import { notifyAdmins } from '@/lib/notifications';
-import { notifyUser } from '@/lib/notifyUser'; 
+import { notifyUser } from '@/lib/notifications';
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {

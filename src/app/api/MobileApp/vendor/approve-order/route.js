@@ -4,7 +4,7 @@ import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 import axios from 'axios';
 import { notifyAdmins } from '@/lib/notifications';
-import { notifyUser } from '@/lib/notifyUser'; 
+import { notifyUser } from '@/lib/notifications';
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
