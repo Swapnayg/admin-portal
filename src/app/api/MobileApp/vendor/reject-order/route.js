@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
-import { notifyAdmins } from "@/lib/notifications";
+import { notifyAdmins } from '@/lib/notifications';
+import { notifyUser } from '@/lib/notifyUser'; 
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -51,6 +52,16 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   `Vendor ${vendorName} has been rejected. Admin may follow up.`,
   "VENDOR_REJECTED"
 );
+
+await notifyUser({
+  title: 'Order Rejected',
+  message: `We’re sorry, but your order for "${order.productName}" has been rejected.`,
+  type: 'ORDER_STATUS',
+  userId: order.customerId,
+  vendorId: order.vendorId,
+  productId: order.productId,
+});
+
 
 
     return NextResponse.json({

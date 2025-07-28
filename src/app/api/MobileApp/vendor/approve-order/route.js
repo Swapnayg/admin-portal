@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 import axios from 'axios';
-import { notifyAdmins } from "@/lib/notifications";
+import { notifyAdmins } from '@/lib/notifications';
+import { notifyUser } from '@/lib/notifyUser'; 
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -107,6 +108,15 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   `Vendor ${vendorName} has been approved.`,
   "VENDOR_APPROVED"
 );
+
+await notifyUser({
+  title: 'Order Approved',
+  message: `Your order for "${order.productName}" has been approved by the vendor.`,
+  type: 'ORDER_STATUS',
+  userId: order.customerId,
+  vendorId: order.vendorId,
+  productId: order.productId,
+});
 
 
     return NextResponse.json({
