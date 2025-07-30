@@ -7,7 +7,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
     const product = await prisma.product.findFirst({
       where: {
-        vendorId: user.vendorId,
+        vendorId: user.userId,
       },
       orderBy: {
         createdAt: 'desc',

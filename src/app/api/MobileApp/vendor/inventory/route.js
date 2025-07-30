@@ -7,7 +7,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
     const products = await prisma.product.findMany({
       where: {
-        vendorId: user.vendorId,
+        vendorId: user.userId,
         status: 'approved',
       },
       orderBy: {

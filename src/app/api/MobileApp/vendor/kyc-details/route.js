@@ -14,16 +14,16 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
 
     // Delete previous KYC docs
     await prisma.kYC.deleteMany({
-      where: { vendorId: user.vendorId },
+      where: { vendorId: user.userId },
     });
 
     const newDocuments = [
-      { vendorId: user.vendorId, type: 'PAN', fileName: panCardFile },
-      { vendorId: user.vendorId, type: 'ADDRESS', fileName: addressProofFile },
+      { vendorId: user.userId, type: 'PAN', fileName: panCardFile },
+      { vendorId: user.userId, type: 'ADDRESS', fileName: addressProofFile },
     ];
 
     if (gstCertificateFile) {
-      newDocuments.push({ vendorId: user.vendorId, type: 'GST', fileName: gstCertificateFile });
+      newDocuments.push({ vendorId: user.userId, type: 'GST', fileName: gstCertificateFile });
     }
 
     const createdDocs = await prisma.kYC.createMany({

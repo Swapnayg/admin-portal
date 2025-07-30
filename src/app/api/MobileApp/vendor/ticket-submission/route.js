@@ -20,7 +20,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         subject,
         message,
         type,
-        vendorId: user.vendorId,
+        vendorId: user.userId,
         fileUrl: fileUrl || null,
       },
     });

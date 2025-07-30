@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma';
 export const GET = withRole(['VENDOR'], async (_req, user) => {
   try {
     const vendor = await prisma.vendor.findUnique({
-      where: { id: user.vendorId },
+      where: { id: user.userId },
       include: {
         category: true,
         zone: true,

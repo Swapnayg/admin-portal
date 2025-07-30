@@ -10,7 +10,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
 
     // 1. Find vendor
     const vendor = await prisma.vendor.findUnique({
-      where: { id: user.vendorId },
+      where: { id: user.userId },
       select: { id: true },
     });
 

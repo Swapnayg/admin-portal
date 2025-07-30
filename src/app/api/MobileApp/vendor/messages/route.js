@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 
 export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
-    const vendorId = user.vendorId;
+    const vendorId = user.userId;
 
     if (!vendorId) {
       return NextResponse.json({ error: 'Vendor ID not found in user' }, { status: 400 });
