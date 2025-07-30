@@ -4,7 +4,11 @@ import prisma from '@/lib/prisma';
 
 export const GET = withRole(async (req, res, user) => {
   try {
-    const vendorId = user.id;
+
+    const vendor = await prisma.vendor.findUnique({
+      where: { userId: user.userId },
+    });
+    const vendorId = vendor.id;
 
     // Total Orders
     const totalOrders = await prisma.order.count({

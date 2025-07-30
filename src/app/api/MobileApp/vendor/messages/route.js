@@ -75,7 +75,7 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
       const customerUserId = chat.customer.user.id;
 
       const unreadMessages = chat.messages.filter(
-        (m) => m.senderId !== user.id // messages from the customer
+        (m) => m.senderId !== user.userId // messages from the customer
       );
 
       unreadCountMap[customerUserId] = unreadMessages.length;

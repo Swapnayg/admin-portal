@@ -5,7 +5,14 @@ import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR', 'CUSTOMER'], async (req, user) => {
   const body = await req.json();
-  const { vendorId, customerId, content } = body;
+  const { customerId, content } = body;
+
+  const vendor = await prisma.vendor.findUnique({
+      where: { userId: user.userId },
+  });
+  const vendorId = vendor.id;
+  const vendorName = vendor.name;
+  const messageContent = content;
 
   if (!vendorId || !customerId || !content) {
     return NextResponse.json({ message: 'vendorId, customerId, and content are required' }, { status: 400 });
@@ -35,7 +42,7 @@ export const POST = withRole(['VENDOR', 'CUSTOMER'], async (req, user) => {
     const message = await prisma.chatMessage.create({
       data: {
         chatId: chat.id,
-        senderId: user.id,
+        senderId: user.userId,
         content,
       },
       include: {

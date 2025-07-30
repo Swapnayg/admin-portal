@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
     const vendor = await prisma.vendor.findUnique({
-      where: { userId: user.id },
+      where: { userId: user.userId },
       select: {
         id: true,
         notifications: {

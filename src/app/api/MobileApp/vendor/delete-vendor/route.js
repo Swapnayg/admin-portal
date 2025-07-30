@@ -6,7 +6,7 @@ export const DELETE = withRole(['VENDOR'], async (req, user) => {
   try {
     // Find the vendor
     const vendor = await prisma.vendor.findUnique({
-      where: { userId: user.id },
+      where: { userId: user.userId },
     });
 
     if (!vendor) {

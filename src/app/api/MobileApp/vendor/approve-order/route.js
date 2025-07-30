@@ -26,7 +26,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
     });
 
-    if (!order || order.vendorId !== user.id) {
+    if (!order || order.vendorId !== user.userId) {
       return NextResponse.json(
         { error: 'Order not found or unauthorized' },
         { status: 404 }

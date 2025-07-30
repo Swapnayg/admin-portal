@@ -7,6 +7,11 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   const body = await req.json();
   const { productId, newStock } = body;
 
+  const vendor = await prisma.vendor.findUnique({
+    where: { userId: user.userId },
+  });
+  var vendorName = vendor.businessName;
+
   if (!productId || typeof newStock !== 'number') {
     return NextResponse.json({
       success: false,
@@ -18,7 +23,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   const product = await prisma.product.findFirst({
     where: {
       id: productId,
-      vendorId: user.id,
+      vendorId: vendor.id,
     },
   });
 
@@ -40,14 +45,14 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   await prisma.stockMovement.create({
     data: {
       productId,
-      vendorId: user.id,
+      vendorId: vendor.id,
       quantity: newStock - product.stock,
     },
   });
 
   // Fetch top 5 recently updated products
   const recentUpdates = await prisma.product.findMany({
-    where: { vendorId: user.id },
+    where: { vendorId: vendor.id },
     orderBy: { updatedAt: 'desc' },
     take: 5,
     select: {
@@ -66,7 +71,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
 
   await notifyAdmins(
   "Stock Updated",
-  `The stock for product ${productName} was updated by ${vendorName}.`,
+  `The stock for product ${recentUpdates.name} was updated by ${vendorName}.`,
   "UPDATE_PRODUCT_STOCK"
 );
 

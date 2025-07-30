@@ -12,7 +12,7 @@ export const GET = withRole(async (req, res, user) => {
     return NextResponse.json({ success: false, message: 'Missing month or year' }, { status: 400 });
   }
 
-  const vendorId = user.id;
+  const vendorId = user.userId;
   const startDate = new Date(year, month - 1, 1);
   const endDate = endOfMonth(startDate);
 

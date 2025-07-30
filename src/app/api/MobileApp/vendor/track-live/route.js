@@ -18,7 +18,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       where: { id: parseInt(orderId) },
     });
 
-    if (!order || order.vendorId !== user.id) {
+    if (!order || order.vendorId !== user.userId) {
       return NextResponse.json(
         { error: 'Order not found or unauthorized access' },
         { status: 404 }
