@@ -5,9 +5,21 @@ import prisma from '@/lib/prisma';
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
+    const vendor = await prisma.vendor.findUnique({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        category: true,
+        zone: true,
+        bankAccount: true,
+        kycDocuments: true,
+        products: true,
+      },
+    });
     const product = await prisma.product.findFirst({
       where: {
-        vendorId: user.userId,
+        vendorId: vendor.id,
       },
       orderBy: {
         createdAt: 'desc',

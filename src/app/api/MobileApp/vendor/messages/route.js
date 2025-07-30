@@ -4,7 +4,20 @@ import prisma from '@/lib/prisma';
 
 export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
-    const vendorId = user.userId;
+
+    const vendor = await prisma.vendor.findUnique({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        category: true,
+        zone: true,
+        bankAccount: true,
+        kycDocuments: true,
+        products: true,
+      },
+    });
+    const vendorId = vendor.id;
 
     if (!vendorId) {
       return NextResponse.json({ error: 'Vendor ID not found in user' }, { status: 400 });

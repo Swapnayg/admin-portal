@@ -12,18 +12,30 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       return NextResponse.json({ success: false, error: 'PAN card and Address Proof are required' }, { status: 400 });
     }
 
+    const vendor = await prisma.vendor.findUnique({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        category: true,
+        zone: true,
+        bankAccount: true,
+        kycDocuments: true,
+        products: true,
+      },
+    });
     // Delete previous KYC docs
     await prisma.kYC.deleteMany({
-      where: { vendorId: user.userId },
+      where: { vendorId: vendor.id },
     });
 
     const newDocuments = [
-      { vendorId: user.userId, type: 'PAN', fileName: panCardFile },
-      { vendorId: user.userId, type: 'ADDRESS', fileName: addressProofFile },
+      { vendorId: vendor.id, type: 'PAN', fileName: panCardFile },
+      { vendorId: vendor.id, type: 'ADDRESS', fileName: addressProofFile },
     ];
 
     if (gstCertificateFile) {
-      newDocuments.push({ vendorId: user.userId, type: 'GST', fileName: gstCertificateFile });
+      newDocuments.push({ vendorId: vendor.id, type: 'GST', fileName: gstCertificateFile });
     }
 
     const createdDocs = await prisma.kYC.createMany({

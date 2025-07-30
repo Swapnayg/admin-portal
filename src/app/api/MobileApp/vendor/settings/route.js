@@ -5,7 +5,19 @@ import prisma from '@/lib/prisma';
 // GET - Fetch bank details for the vendor
 export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
-    const vendorId = user.userId;
+    const vendor = await prisma.vendor.findUnique({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        category: true,
+        zone: true,
+        bankAccount: true,
+        kycDocuments: true,
+        products: true,
+      },
+    });
+    const vendorId = vendor.id;
 
     if (!vendorId) {
       return NextResponse.json({ error: 'Vendor ID missing in token' }, { status: 400 });
@@ -27,7 +39,19 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
 // POST - Create or update bank details for the vendor
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
-    const vendorId = user.userId;
+    const vendor = await prisma.vendor.findUnique({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        category: true,
+        zone: true,
+        bankAccount: true,
+        kycDocuments: true,
+        products: true,
+      },
+    });
+    const vendorId = vendor.id;
 
     if (!vendorId) {
       return NextResponse.json({ error: 'Vendor ID missing in token' }, { status: 400 });

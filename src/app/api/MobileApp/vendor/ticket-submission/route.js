@@ -15,12 +15,26 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       );
     }
 
+    const vendor = await prisma.vendor.findUnique({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        category: true,
+        zone: true,
+        bankAccount: true,
+        kycDocuments: true,
+        products: true,
+      },
+    });
+    const vendorId = vendor.id;
+
     const newTicket = await prisma.ticket.create({
       data: {
         subject,
         message,
         type,
-        vendorId: user.userId,
+        vendorId: vendorId,
         fileUrl: fileUrl || null,
       },
     });

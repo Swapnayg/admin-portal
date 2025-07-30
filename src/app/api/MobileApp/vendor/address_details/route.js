@@ -9,7 +9,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     const { phone, address, city, state, zipcode } = body;
 
     const updatedVendor = await prisma.vendor.update({
-      where: { id: user.userId },
+      where: { userId: user.userId },
       data: {
         phone,
         address,
