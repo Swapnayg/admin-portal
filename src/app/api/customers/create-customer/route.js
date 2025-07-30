@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { Prisma } from '@prisma/client'; 
+import prisma from '@/lib/prisma';
 
 export const transporter = nodemailer.createTransport({
   service: 'Gmail', // or your provider

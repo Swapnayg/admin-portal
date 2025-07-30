@@ -1,7 +1,7 @@
 // app/api/app/vendor/profile/route.ts
 import { withRole } from '@/lib/withRole';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 export const GET = withRole(['VENDOR'], async (_req, user) => {
   try {

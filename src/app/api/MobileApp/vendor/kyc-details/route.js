@@ -1,7 +1,7 @@
 // app/api/app/vendor/update-kyc/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {

@@ -1,7 +1,7 @@
 // app/api/app/vendor/product/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { notifyAdmins } from "@/lib/notifications";
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
