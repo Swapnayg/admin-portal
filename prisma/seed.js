@@ -10,6 +10,29 @@ async function main() {
   const username = "admin";
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
+    const zones = [
+    {id:1, name: 'North India', country: 'India', region: 'North' },
+    {id:2, name: 'South India', country: 'India', region: 'South' },
+    {id:3, name: 'East India', country: 'India', region: 'East' },
+    {id:4, name: 'West India', country: 'India', region: 'West' },
+    {id:5, name: 'Central India', country: 'India', region: 'Central' },
+    {id:6, name: 'North America', country: 'USA', region: 'North America' },
+    {id:7, name: 'Europe', country: null, region: 'Europe' },
+    {id:8, name: 'Middle East', country: null, region: 'Middle East' },
+    {id:9, name: 'Southeast Asia', country: null, region: 'Asia' },
+    {id:10, name: 'Africa', country: null, region: 'Africa' },
+    {id:11, name: 'Australia & Oceania', country: 'Australia', region: 'Oceania' },
+    {id:12, name: 'South America', country: null, region: 'South America' },
+  ];
+
+  for (const zone of zones) {
+    await prisma.locationZone.upsert({
+      where: { id: zone.id },
+      update: {},
+      create: zone,
+    });
+  }
+
     // Check if the admin user already exists
   const existing = await prisma.user.findFirst({
     where: {
@@ -65,6 +88,9 @@ async function main() {
       { name: "Marine & Offshore Equipment" },
     ],
   });
+
+    
+
 
   await prisma.productCategory.createMany({
     data: [

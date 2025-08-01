@@ -1,4 +1,3 @@
-// app/api/app/vendor/profile/route.ts
 import { withRole } from '@/lib/withRole';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -8,15 +7,36 @@ export const GET = withRole(['VENDOR'], async (_req, user) => {
     const vendor = await prisma.vendor.findUnique({
       where: { userId: user.userId },
       include: {
-        category: true,
-        zone: true,
-        kycDocuments: true,
+        category: {
+          select: { id: true, name: true },
+        },
+        zones: {
+          include: {
+            zone: { // ← gets the actual LocationZone from VendorZone
+              select: { id: true, name: true, country: true, region: true },
+            },
+          },
+        },
+        kycDocuments: {
+          select: {
+            id: true,
+            vendorId: true,
+            type: true,
+            fileUrl: true,
+            verified: true,
+          },
+        },
       },
     });
 
     if (!vendor) {
-      return NextResponse.json({ success: false, error: 'Vendor not found' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: 'Vendor not found' },
+        { status: 404 }
+      );
     }
+
+    const assignedZones = vendor.zones.map((vz) => vz.zone); // ← extract LocationZone[]
 
     return NextResponse.json({
       success: true,
@@ -37,24 +57,17 @@ export const GET = withRole(['VENDOR'], async (_req, user) => {
         designation: vendor.designation,
         status: vendor.status,
         createdAt: vendor.createdAt,
-        category: vendor.category
-          ? { id: vendor.category.id, name: vendor.category.name }
-          : null,
-        zone: vendor.zone
-          ? { id: vendor.zone.id, name: vendor.zone.name, country: vendor.zone.country }
-          : null,
-        kycDocuments: vendor.kycDocuments.map((doc) => ({
-          id: doc.id,
-          vendorId: doc.vendorId,
-          type: doc.type,
-          fileUrl: doc.fileUrl,
-          verified: doc.verified,
-        })),
+        isActive: vendor.isActive,
+        deactivatedAt: vendor.deactivatedAt,
+        category: vendor.category,
+        zones: assignedZones, // ← send only the LocationZones
+        kycDocuments: vendor.kycDocuments,
       },
     });
   } catch (error) {
+    console.error('[GET_VENDOR_PROFILE_ERROR]', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Something went wrong' },
+      { success: false, error: error instanceof Error ? error.message : 'Something went wrong' },
       { status: 500 }
     );
   }

@@ -12,7 +12,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       include: {
         category: true,
-        zone: true,
+        zones: true,
         bankAccount: true,
         kycDocuments: true,
         products: true,

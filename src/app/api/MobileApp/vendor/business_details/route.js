@@ -12,13 +12,13 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       where: { userId: user.userId },
       data: {
         businessName,
-        gst,
+        gstNumber:gst,
         website,
       },
       select: {
         id: true,
         businessName: true,
-        gst: true,
+        gstNumber: true,
         website: true,
       },
     });

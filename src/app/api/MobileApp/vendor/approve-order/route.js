@@ -106,7 +106,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     await notifyAdmins(
   "Vendor Approved",
   `Vendor ${vendorName} has been approved.`,
-  "VENDOR_APPROVED"
+  "VENDOR_APPROVAL"
 );
 
 await notifyUser({

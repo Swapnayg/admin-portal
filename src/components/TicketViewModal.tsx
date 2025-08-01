@@ -26,14 +26,30 @@ interface Message {
   createdAt: string;
 }
 
-interface Ticket {
+interface  Ticket {
   id: number;
   subject: string;
   message: string;
-  type: string;
+  type: 'GENERAL' | 'TECHNICAL_ISSUE' | 'ACCOUNT_CLEARANCE' | 'REACTIVATE_ACCOUNT' | 'SUPPORT' | string; // expand as per your enum
   status: 'OPEN' | 'RESPONDED' | 'CLOSED';
-  vendor?: { user: { name: string } };
-  customer?: { user: { name: string } };
+  name?: string | null;
+  email?: string | null;
+  fileUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId?: number | null;
+  vendorId?: number | null;
+  customerId?: number | null;
+  vendor?: {
+    user: {
+      username: string;
+    };
+  } | null;
+  customer?: {
+    user: {
+      username: string;
+    };
+  } | null;
   messages: Message[];
 }
 
@@ -73,9 +89,9 @@ export default function TicketViewModal({
 
   const getFrom = () =>
     ticket.vendor
-      ? `Vendor: ${ticket.vendor.user.name}`
+      ? `Vendor: ${ticket.vendor.user.username}`
       : ticket.customer
-      ? `Customer: ${ticket.customer.user.name}`
+      ? `Customer: ${ticket.customer.user.username}`
       : 'Anonymous';
 
 

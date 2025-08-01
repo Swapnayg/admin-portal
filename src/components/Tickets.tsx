@@ -18,24 +18,30 @@ interface Message {
 }
 
 
-interface Ticket {
-  name: string;
+interface  Ticket {
   id: number;
   subject: string;
-  message:string;
-  type: string;
+  message: string;
+  type: 'GENERAL' | 'TECHNICAL_ISSUE' | 'ACCOUNT_CLEARANCE' | 'REACTIVATE_ACCOUNT' | 'SUPPORT' | string; // expand as per your enum
   status: 'OPEN' | 'RESPONDED' | 'CLOSED';
+  name?: string | null;
+  email?: string | null;
+  fileUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId?: number | null;
+  vendorId?: number | null;
+  customerId?: number | null;
   vendor?: {
     user: {
-      name: string;
+      username: string;
     };
-  };
+  } | null;
   customer?: {
     user: {
-      name: string;
+      username: string;
     };
-  };
-  createdAt: string;
+  } | null;
   messages: Message[];
 }
 
@@ -65,8 +71,8 @@ export default function Tickets() {
   };
 
   const getFromLabel = (ticket: Ticket) => {
-    if (ticket.vendor) return `Vendor: ${ticket.vendor?.user?.name}`;
-    if (ticket.customer) return `Cust: ${ticket.customer?.user?.name}`;
+    if (ticket.vendor) return `Vendor: ${ticket.vendor?.user?.username}`;
+    if (ticket.customer) return `Cust: ${ticket.customer?.user?.username}`;
     return ticket.name || 'Anonymous';
   };
 

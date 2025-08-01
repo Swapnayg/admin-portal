@@ -1,4 +1,3 @@
-// app/api/app/vendor/address/update/route.ts
 import { NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
@@ -33,7 +32,9 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       data: updatedVendor,
     });
   } catch (error) {
-    console.error('[Vendor Update Error]:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 });

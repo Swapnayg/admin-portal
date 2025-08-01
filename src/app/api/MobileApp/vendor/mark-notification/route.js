@@ -11,7 +11,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       include: {
         category: true,
-        zone: true,
+        zones: true,
         bankAccount: true,
         kycDocuments: true,
         products: true,
@@ -47,7 +47,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     // Mark single notification as read
     const notification = await prisma.notification.updateMany({
       where: {
-        id: notificationId,
+        id: parseInt(notificationId),
         vendorId,
         read: false,
       },

@@ -2,8 +2,9 @@
 import { NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
+import { ProductStatus } from '@prisma/client';
 
-export const POST = withRole(['VENDOR'], async (req, user) => {
+export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
 
     const vendor = await prisma.vendor.findUnique({
@@ -12,7 +13,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       include: {
         category: true,
-        zone: true,
+        zones: true,
         bankAccount: true,
         kycDocuments: true,
         products: true,
@@ -21,7 +22,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     const products = await prisma.product.findMany({
       where: {
         vendorId: vendor.id,
-        status: 'approved',
+        status: ProductStatus.APPROVED,
       },
       orderBy: {
         createdAt: 'desc',
@@ -34,7 +35,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
 
     return NextResponse.json({
       success: true,
-      data: products,
+      products: products,
     });
   } catch (error) {
     console.error('Fetch products error:', error);

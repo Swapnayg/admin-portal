@@ -30,7 +30,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       include: {
         category: true,
-        zone: true,
+        zones: true,
         bankAccount: true,
         kycDocuments: true,
         products: true,
@@ -101,7 +101,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         data: compliance.map((c) => ({
           productId: product.id,
           type: c.type,
-          documentUrl: c.documentUrl,
+          fileUrl: c.fileUrl,
         })),
       });
     }

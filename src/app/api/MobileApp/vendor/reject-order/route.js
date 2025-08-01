@@ -17,12 +17,17 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       );
     }
 
+    const vendor = await prisma.vendor.findUnique({
+          where: { userId: user.userId },
+    });
+    const vendorId = vendor.id;
+
     // Check if order exists and belongs to the vendor
     const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
     });
 
-    if (!order || order.vendorId !== user.userId) {
+    if (!order || order.vendorId !== vendorId) {
       return NextResponse.json(
         { error: 'Order not found or unauthorized access' },
         { status: 404 }

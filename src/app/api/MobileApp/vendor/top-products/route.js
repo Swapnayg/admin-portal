@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 
-export const POST = withRole(['VENDOR'], async (req, user) => {
+export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
     const vendor = await prisma.vendor.findUnique({
       where: {
@@ -11,7 +11,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       include: {
         category: true,
-        zone: true,
+        zones: true,
         bankAccount: true,
         kycDocuments: true,
         products: true,

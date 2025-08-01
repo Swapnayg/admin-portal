@@ -11,7 +11,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       include: {
         category: true,
-        zone: true,
+        zones: true,
         bankAccount: true,
         kycDocuments: true,
         products: true,
@@ -20,18 +20,18 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     const products = await prisma.product.findMany({
       where: {
         vendorId: vendor.id,
-        status: 'approved',
       },
       orderBy: {
         createdAt: 'desc',
       },
-      take: 1,
+      take: 10,
       include: {
         vendor: true,
         category: true,
         images: true,
+        compliance:true,
         orderItems: true,
-        notifications: true,
+        notification: true,
         reviews: true,
       },
     });
@@ -39,10 +39,9 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     if (!products.length) {
       return NextResponse.json({ success: false, message: 'No approved products found' }, { status: 404 });
     }
-
     return NextResponse.json({
       success: true,
-      data: products[0],
+      data: products,
     });
   } catch (error) {
     console.error('Fetch product error:', error);

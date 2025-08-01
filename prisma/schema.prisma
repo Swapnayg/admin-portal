@@ -73,11 +73,9 @@ model Vendor {
 
 
   categoryId Int?
-  zoneId     Int? // Nullable
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   category VendorCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  zone     LocationZone?   @relation(name: "ZoneToVendor", fields: [zoneId], references: [id], onDelete: SetNull)
 
   kycDocuments KYC[]
   products     Product[]
@@ -88,8 +86,18 @@ model Vendor {
   chats        Chat[]
   bankAccount  BankAccount? // One-to-one relation
 
-  // Reverse relation for one-to-one zone control
-  zoneOwner LocationZone? @relation(name: "VendorToZone")
+  zones VendorZone[] 
+  stockMovements StockMovement[]
+}
+
+model VendorZone {
+  id         Int           @id @default(autoincrement())
+  vendor     Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorId   Int
+  zone       LocationZone  @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  zoneId     Int
+
+  @@unique([vendorId, zoneId]) // ✅ prevent duplicate assignments
 }
 
 enum VendorStatus {
@@ -181,7 +189,21 @@ model Product {
   notification Notification[]
   images       ProductImage[]
   reviews      Review[]
+  stockMovements StockMovement[]
 }
+
+model StockMovement {
+  id         Int       @id @default(autoincrement())
+  productId  Int
+  vendorId   Int
+  quantity   Int        // Positive for added stock, negative for removed
+  createdAt  DateTime   @default(now())
+
+  // Relations
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vendor     Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+}
+
 
 model Review {
   id        Int      @id @default(autoincrement())
@@ -243,6 +265,14 @@ enum NotificationType {
   VENDOR_REGISTRATION
   ADMIN_ALERT
   GENERAL
+  ADD_PRODUCT
+  LOW_STOCK
+  ORDER_SHIPPED
+  VENDOR_REJECTED
+  MESSAGE_FROM_VENDOR
+  SUBMIT_TICKET
+  UPDATE_PRODUCT_STOCK
+  ORDER_STATUS
 }
 
 enum ProductStatus {
@@ -591,14 +621,10 @@ model ProductCategory {
 model LocationZone {
   id      Int     @id @default(autoincrement())
   name    String
-  country String
+  country String?
   region  String?
 
-  vendorId Int    @unique
-  vendor   Vendor @relation(name: "VendorToZone", fields: [vendorId], references: [id], onDelete: Cascade)
-
-  // Optional: list of vendors assigned to this zone
-  assignedVendors Vendor[] @relation(name: "ZoneToVendor")
+  assignedVendors VendorZone[] // ✅ New pivot table
 }
 
 model AuditLog {

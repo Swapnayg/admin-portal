@@ -7,19 +7,19 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
     const { name, email, phone, designation } = await req.json();
 
-    const updatedUser = await prisma.user.update({
-      where: { id: user.userId },
+    const updatedUser = await prisma.vendor.update({
+      where: { userId: user.userId },
       data: {
-        name,
-        email,
-        phone,
-        designation,
+        contactName: name,
+        contactEmail: email,
+        contactPhone: phone,
+        designation: designation,
       },
       select: {
         id: true,
-        name: true,
-        email: true,
-        phone: true,
+        contactName: true,
+        contactEmail: true,
+        contactPhone: true,
         designation: true,
       },
     });

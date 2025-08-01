@@ -15,7 +15,7 @@ export default async function ViewVendorPage({ id }: Props) {
     include: {
       user: { select: { username: true, email: true } },
       category: true,
-      zone: true,
+      zones: true,
       kycDocuments: true,
     },
   });

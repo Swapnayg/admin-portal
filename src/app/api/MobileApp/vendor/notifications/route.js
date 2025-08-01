@@ -8,14 +8,14 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
       where: { userId: user.userId },
       select: {
         id: true,
-        notifications: {
+        notification: {
           orderBy: { createdAt: 'desc' },
           select: {
             id: true,
             title: true,
             message: true,
             type: true,
-            isRead: true,
+            read: true,
             createdAt: true,
           },
         },
@@ -26,12 +26,14 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
       return NextResponse.json({ message: 'Vendor not found' }, { status: 404 });
     }
 
-    const unreadCount = vendor.notifications.filter(n => !n.isRead).length;
+    const unreadCount = vendor.notification.filter(n => !n.read).length;
+
+    console.log(vendor.notification);
 
     return NextResponse.json({
       vendorId: vendor.id,
       unreadCount,
-      notifications: vendor.notifications,
+      notifications: vendor.notification,
     });
   } catch (error) {
     console.error('[Get Vendor Notifications Error]', error);
