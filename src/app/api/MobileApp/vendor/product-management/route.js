@@ -29,10 +29,14 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         vendor: true,
         category: true,
         images: true,
-        compliance:true,
+        compliance: true,
         orderItems: true,
         notification: true,
-        reviews: true,
+        reviews: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 

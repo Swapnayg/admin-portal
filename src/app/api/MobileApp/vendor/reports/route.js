@@ -3,30 +3,48 @@ import prisma from '@/lib/prisma';
 import { withRole } from '@/lib/withRole';
 import { endOfMonth } from 'date-fns';
 
-export const GET = withRole(async (req, res, user) => {
+export const GET = withRole(['VENDOR'], async (req, user) => {
+
   const { searchParams } = new URL(req.url);
   const month = Number(searchParams.get('month'));
   const year = Number(searchParams.get('year'));
 
   if (!month || !year) {
+    console.warn('Missing month or year in query');
     return NextResponse.json({ success: false, message: 'Missing month or year' }, { status: 400 });
   }
 
-  const vendor = await prisma.vendor.findUnique({
-    where: { userId: user.userId },
-  });
-  const vendorId = vendor.id;
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = endOfMonth(startDate);
-
   try {
-    const [totalSales, ordersThisMonth, newCustomers, topProduct, salesTrends, recentOrders] = await Promise.all([
+    const vendor = await prisma.vendor.findUnique({
+      where: { userId: user.userId },
+    });
+
+    if (!vendor) {
+      console.warn('Vendor not found for user:', user.userId);
+      return NextResponse.json({ success: false, message: 'Vendor not found' }, { status: 404 });
+    }
+
+    const vendorId = vendor.id;
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = endOfMonth(startDate);
+
+    const [
+      totalSales,
+      ordersThisMonth,
+      newCustomers,
+      topProduct,
+      salesTrends,
+      recentOrders
+    ] = await Promise.all([
       prisma.order.aggregate({
-        _sum: { totalAmount: true },
+        _sum: { total: true },
         where: {
           vendorId,
           createdAt: { gte: startDate, lte: endDate },
         },
+      }).then(data => {
+        return data;
       }),
 
       prisma.order.count({
@@ -34,49 +52,86 @@ export const GET = withRole(async (req, res, user) => {
           vendorId,
           createdAt: { gte: startDate, lte: endDate },
         },
+      }).then(data => {
+        return data;
       }),
 
-      prisma.customer.count({
+      prisma.user.count({
         where: {
-          createdAt: { gte: startDate, lte: endDate },
-          orders: { some: { vendorId } },
+          role: 'CUSTOMER',
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+          customer: {
+            orders: {
+              some: {
+                vendorId: vendorId,
+              },
+            },
+          },
         },
+      }).then(data => {
+        return data;
       }),
 
-      prisma.order.groupBy({
+
+      prisma.orderItem.groupBy({
         by: ['productId'],
         _sum: { quantity: true },
         where: {
-          vendorId,
-          createdAt: { gte: startDate, lte: endDate },
+          order: {
+            vendorId,
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
         },
-        orderBy: { _sum: { quantity: 'desc' } },
+        orderBy: {
+          _sum: {
+            quantity: 'desc',
+          },
+        },
         take: 1,
       }).then(async (top) => {
         if (!top.length) return 'N/A';
-        const product = await prisma.product.findUnique({ where: { id: top[0].productId } });
+
+        const product = await prisma.product.findUnique({
+          where: { id: top[0].productId },
+        });
+
         return product?.name || 'N/A';
       }),
 
-      Promise.all([...Array(7).keys()].map(async (i) => {
-        const from = new Date(startDate);
-        from.setDate(from.getDate() + i * 4);
-        const to = new Date(from);
-        to.setDate(from.getDate() + 3);
+   Promise.all([...Array(4).keys()].map(async (i) => {
+      const from = new Date(startDate);
+      from.setDate(from.getDate() + i * 7); // Week start
+      const to = new Date(from);
+      to.setDate(from.getDate() + 6); // Week end
 
-        const result = await prisma.order.aggregate({
-          _sum: { totalAmount: true },
-          where: {
-            vendorId,
-            createdAt: { gte: from, lte: to },
-          },
-        });
+      const statuses = ['DELIVERED', 'SHIPPED', 'PENDING'];
 
-        return {
-          blue: result._sum.totalAmount || 0,
-          pink: Math.floor(Math.random() * 3000) + 1000, // dummy
-        };
-      })),
+      const [delivered, shipped, pending] = await Promise.all(
+        statuses.map(status =>
+          prisma.order.aggregate({
+            _sum: { total: true },
+            where: {
+              vendorId,
+              status,
+              createdAt: { gte: from, lte: to },
+            },
+          })
+        )
+      );
+
+      return {
+        week: `Week ${i + 1}`,
+        blue: delivered._sum.total || 0,  // Delivered
+        pink: shipped._sum.total || 0,    // Shipped
+        green: pending._sum.total || 0,   // Pending
+      };
+    })),
 
       prisma.order.findMany({
         where: {
@@ -87,19 +142,21 @@ export const GET = withRole(async (req, res, user) => {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          totalAmount: true,
+          total: true,
           status: true,
           createdAt: true,
           customer: { select: { name: true } },
         },
+      }).then(data => {
+        return data;
       }),
     ]);
 
     const partners = [
       { name: 'Airbnb', logo: 'https://cdn.brandfetch.io/idkuvXnjOH/w/400/h/400/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1717146459610' },
       { name: 'Netflix', logo: 'https://images.ctfassets.net/y2ske730sjqp/5QQ9SVIdc1tmkqrtFnG9U1/de758bba0f65dcc1c6bc1f31f161003d/BrandAssets_Logos_02-NSymbol.jpg?w=940' },
-      { name: 'Uber', logo: 'https://cdn-assets-us.frontify.com/s3/frontify-enterprise-files-us/eyJwYXRoIjoicG9zdG1hdGVzXC9hY2NvdW50c1wvODRcLzQwMDA1MTRcL3Byb2plY3RzXC8yN1wvYXNzZXRzXC9lZFwvNTUwOVwvNmNmOGVmM2YzMjFkMTA3YThmZGVjNjY1NjJlMmVmMzctMTYyMDM3Nzc0OC5haSJ9:postmates:9KZWqmYNXpeGs6pQy4UCsx5EL3qq29lhFS6e4ZVfQrs?width=2400' },
-      { name: 'Spotify', logo: 'https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Full_Logo_RGB_Black.png' },
+      { name: 'Uber', logo: 'https://1000logos.net/wp-content/uploads/2021/04/Uber-logo.png' },
+      { name: 'Spotify', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Spotify_logo_with_text.svg/512px-Spotify_logo_with_text.svg.png' },
     ];
 
     return NextResponse.json({
@@ -107,14 +164,14 @@ export const GET = withRole(async (req, res, user) => {
       message: 'Vendor reports fetched successfully',
       user,
       data: {
-        totalSales: `₹${totalSales._sum.totalAmount?.toFixed(0) || '0'}`,
+        totalSales: `₹${totalSales._sum.total?.toFixed(0) || '0'}`,
         ordersThisMonth,
         newCustomers,
         topProduct,
         monthlySalesTrends: salesTrends,
         recentOrders: recentOrders.map((order) => ({
           id: order.id,
-          amount: `₹${order.totalAmount?.toFixed(0) || '0'}`,
+          amount: `₹${order.total?.toFixed(0) || '0'}`,
           customer: order.customer?.name || 'N/A',
           status: order.status,
           createdAt: order.createdAt,

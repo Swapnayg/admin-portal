@@ -8,10 +8,14 @@ interface DecodedToken extends JwtPayload {
   role: string;
 }
 
-export function withRole(allowedRoles: string[], handler: (req: NextRequest, user: DecodedToken) => Promise<NextResponse>) {
+export function withRole(
+  allowedRoles: string[],
+  handler: (req: NextRequest, user: DecodedToken) => Promise<NextResponse>
+) {
   return async (req: NextRequest) => {
     try {
       const authHeader = req.headers.get('authorization') || '';
+
       const token = authHeader.replace('Bearer ', '');
 
       if (!token) {

@@ -347,6 +347,7 @@ model OrderItem {
   commissionPct Float? @default(0) // optional: e.g., 10.5 for 10.5%
   commissionAmt Float? @default(0) // calculated: basePrice * quantity * commissionPct / 100
 
+  createdAt DateTime @default(now()) 
   // Relations
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)

@@ -50,6 +50,24 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     },
   });
 
+    // Only create payout if stock increased
+    const addedStock = newStock - product.stock;
+    if (addedStock > 0) {
+      const totalBaseAmount = product.basePrice * addedStock;
+      const commissionRate = product.defaultCommissionPct || 0;
+      const commissionAmount = parseFloat(((totalBaseAmount * commissionRate) / 100).toFixed(2));
+      const vendorPayoutAmount = parseFloat((totalBaseAmount - commissionAmount).toFixed(2));
+
+      await prisma.payout.create({
+        data: {
+          vendorId: vendor.id,
+          amount: vendorPayoutAmount,
+          commissionAmount,
+          status: 'PENDING',
+        },
+      });
+    }
+
   // Fetch top 5 recently updated products
   const recentUpdates = await prisma.product.findMany({
     where: { vendorId: vendor.id },

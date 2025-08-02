@@ -13,6 +13,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       name,
       description,
       basePrice,
+      defaultCommissionPct,
       taxRate,
       price,
       stock,
@@ -51,6 +52,20 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       await prisma.productImage.deleteMany({ where: { productId: id } });
       await prisma.compliance.deleteMany({ where: { productId: id } });
 
+        const totalBaseAmount = basePrice * stock;
+      const commissionRate = defaultCommissionPct || 0;
+      const commissionAmount = parseFloat(((totalBaseAmount * commissionRate) / 100).toFixed(2));
+      const vendorPayoutAmount = parseFloat((totalBaseAmount - commissionAmount).toFixed(2));
+
+      await prisma.payout.create({
+        data: {
+          vendorId: vendor.id,
+          amount: vendorPayoutAmount,
+          commissionAmount,
+          status: 'PENDING',
+        },
+      });
+    
       product = await prisma.product.update({
         where: { id },
         data: {
@@ -105,6 +120,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         })),
       });
     }
+
 
     await notifyAdmins(
       "New Product Added",
