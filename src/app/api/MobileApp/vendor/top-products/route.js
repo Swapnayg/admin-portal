@@ -19,6 +19,15 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
     const products = await prisma.product.findMany({
       where: {
         vendorId: vendor.id,
+        orderItems: {
+          some: {
+            order: {
+              status: {
+                in: ['SHIPPED', 'DELIVERED'],
+              },
+            },
+          },
+        },
       },
       orderBy: {
         orderItems: {
