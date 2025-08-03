@@ -54,7 +54,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
 
     await notifyAdmins(
   "Vendor Rejected",
-  `Vendor ${vendorName} has been rejected. Admin may follow up.`,
+  `Vendor ${vendor.businessName} has been rejected. Admin may follow up.`,
   "VENDOR_REJECTED"
 );
 

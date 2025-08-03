@@ -370,20 +370,34 @@ model OrderTracking {
 }
 
 model Payment {
-  id        Int           @id @default(autoincrement())
-  orderId   Int           @unique
-  amount    Float
-  status    PaymentStatus @default(PAID)
-  method    String
-  createdAt DateTime      @default(now())
+  id            Int           @id @default(autoincrement())
+  orderId       Int           @unique
+  amount        Float         @default(0)
+  status        PaymentStatus @default(PAID)
+  method        String        @default("Unknown") // e.g., Razorpay, Paytm, Cash
+  mode          PaymentMode   @default(COD)       // COD, BANK, or UPI
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  transactionId String?       @default("")        // UPI ID or bank transaction ID
+  bankName      String?       @default("")        // If BANK mode
+  accountNo     String?       @default("")        // Optional masked account number
+  ifsc          String?       @default("")        // Optional IFSC
+
+  createdAt     DateTime      @default(now())
+
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentMode {
+  COD
+  BANK
+  UPI
 }
 
 enum PaymentStatus {
+  PENDING
   PAID
-  REFUNDED
   FAILED
+  REFUNDED
 }
 
 model Payout {

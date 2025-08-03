@@ -136,7 +136,14 @@ export default function reviewPage() {
                   </div>
                   <div>
                     <strong className="text-gray-700">Zone:</strong>
-                    <div className="text-gray-900">{vendor.zone?.name || "—"}</div>
+                    <div className="text-gray-900">
+                      {Array.isArray(vendor.zones) && vendor.zones.length > 0
+                        ? vendor.zones
+                            .map((z: { zone: { name: any; }; }) => z.zone?.name)   // safely access nested name
+                            .filter(Boolean)            // remove null/undefined
+                            .join(', ')
+                        : '—'}
+                    </div>
                   </div>
                   <div>
                     <strong className="text-gray-700">GST Number:</strong>

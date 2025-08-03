@@ -20,7 +20,13 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       include: {
         payment: true,
         vendor: { select: { businessName: true } },
-        customer: { select: { name: true, email: true, phone: true } },
+        customer: { select: { name: true, phone: true,
+          user: {
+            select: {
+              email: true,
+            },
+          },
+      } },
         items: {
           include: {
             product: {
@@ -53,7 +59,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
       customer: {
         name: order.customer?.name || 'Unknown',
-        email: order.customer?.email || '',
+        email: order.customer?.user.email || '',
         phone: order.customer?.phone || '',
       },
       items: order.items.map((item) => {

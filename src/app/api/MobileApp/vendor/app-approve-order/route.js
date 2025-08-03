@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRole } from '@/lib/withRole';
 import prisma from '@/lib/prisma';
 import axios from 'axios';
-import { notifyAdmins } from '@/lib/notifications';
-import { notifyUser } from '@/lib/notifications';
+import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
 export const POST = withRole(['VENDOR'], async (req, user) => {
   try {
@@ -12,7 +11,15 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
     const { orderId } = body;
 
     if (!orderId) {
+      console.warn('[Validation Error] Missing orderId');
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
+    }
+    const vendor = await prisma.vendor.findUnique({
+      where: { userId: user.userId },
+    });
+    
+    if (!vendor) {
+      return NextResponse.json({ message: 'Vendor not found'}, { status: 404 });
     }
 
     const order = await prisma.order.findUnique({
@@ -20,30 +27,37 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       include: {
         vendor: true,
         customer: true,
-        items: {
-          include: { product: true },
-        },
+        items: { include: { product: true } },
       },
     });
 
-    if (!order || order.vendorId !== user.userId) {
+    if (!order) {
+      console.warn('[DB Error] Order not found');
+    } else if (order.vendorId !== vendor.id) {
+      console.warn('[Unauthorized] Vendor mismatch', {
+        vendorId: order.vendorId,
+        currentUser: user.userId,
+      });
+    }
+
+    if (!order || order.vendorId !== vendor.id) {
       return NextResponse.json(
         { error: 'Order not found or unauthorized' },
         { status: 404 }
       );
     }
 
-    // ✅ Fetch Shiprocket token from the api_key table
     const tokenEntry = await prisma.apiKey.findFirst({
       where: {
         name: 'shiprocket',
-        role: 'ADMIN', // or whatever role is correct for the token
+        role: 'ADMIN',
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    const token = tokenEntry?.token;
+    const token = tokenEntry?.key;
     if (!token) {
+      console.error('[Shiprocket] Token not found in DB');
       return NextResponse.json({ error: 'Shiprocket token not found' }, { status: 500 });
     }
 
@@ -73,6 +87,8 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       weight: 0.5,
     };
 
+    console.log('[Shiprocket Payload]', JSON.stringify(shipmentPayload, null, 2));
+
     const srRes = await axios.post(
       'https://apiv2.shiprocket.in/v1/external/orders/create/adhoc',
       shipmentPayload,
@@ -83,6 +99,8 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         },
       }
     );
+
+    console.log('[Shiprocket Response]', srRes.data);
 
     const { shipment_id, awb_code, courier_company_id, courier_name } = srRes.data;
 
@@ -95,6 +113,8 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
     });
 
+    console.log('[Order Updated]', updatedOrder);
+
     await prisma.orderTracking.create({
       data: {
         orderId: order.id,
@@ -103,21 +123,24 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       },
     });
 
+    console.log('[Tracking Entry Created]');
+
     await notifyAdmins(
-  "Vendor Approved",
-  `Vendor ${vendorName} has been approved.`,
-  "VENDOR_APPROVAL"
-);
+      'Vendor Approved',
+      `Vendor ${order.vendor.businessName} has been approved.`,
+      'VENDOR_APPROVAL'
+    );
+    console.log('[Admin Notified]');
 
-await notifyUser({
-  title: 'Order Approved',
-  message: `Your order for "${order.productName}" has been approved by the vendor.`,
-  type: 'ORDER_STATUS',
-  userId: order.customerId,
-  vendorId: order.vendorId,
-  productId: order.productId,
-});
-
+    await notifyUser({
+      title: 'Order Approved',
+      message: `Your order for "${order.productName}" has been approved by the vendor.`,
+      type: 'ORDER_STATUS',
+      userId: order.customerId,
+      vendorId: order.vendorId,
+      productId: order.productId,
+    });
+    console.log('[User Notified]');
 
     return NextResponse.json({
       message: 'Order approved and shipped via Shiprocket',
@@ -125,7 +148,7 @@ await notifyUser({
       order: updatedOrder,
     });
   } catch (err) {
-    console.error('[ShiprocketApproveAPI]', err?.response?.data || err);
+    console.error('[ShiprocketApproveAPI Error]', err?.response?.data || err);
     return NextResponse.json(
       { error: err?.response?.data?.message || 'Internal Server Error' },
       { status: 500 }

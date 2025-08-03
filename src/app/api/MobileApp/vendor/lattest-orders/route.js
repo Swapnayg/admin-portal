@@ -33,17 +33,21 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
         id: true,
         createdAt: true,
         status: true,
-        customer: {
-          select: {
-            name: true,
+       customer: {
+        select: {
+          user: {
+            select: {
+              username: true,
+            },
           },
         },
+      },
       },
     });
 
     const formatted = todayOrders.map((order) => ({
       orderId: `ORD-${order.id.toString().padStart(4, '0')}`,
-      customer: order.customer.name,
+      customerName: order.customer.user.username,
       status: order.status,
       date: order.createdAt.toLocaleDateString('en-IN', {
         year: 'numeric',

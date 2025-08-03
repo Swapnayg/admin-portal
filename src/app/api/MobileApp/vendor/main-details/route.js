@@ -4,14 +4,12 @@ import prisma from '@/lib/prisma';
 
 export const GET = withRole(['VENDOR'], async (req, user) => {
   try {
-    console.log('[API] Vendor overview start. User ID:', user.userId);
 
     const vendor = await prisma.vendor.findUnique({
       where: { userId: user.userId },
     });
 
     if (!vendor) {
-      console.error('[API] Vendor not found for user:', user.userId);
       return NextResponse.json(
         { success: false, message: 'Vendor not found' },
         { status: 404 }
@@ -19,13 +17,11 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
     }
 
     const vendorId = vendor.id;
-    console.log('[API] Vendor found:', vendorId);
 
     // Total Orders
     const totalOrders = await prisma.order.count({
       where: { vendorId },
     });
-    console.log('[API] Total Orders:', totalOrders);
 
     // Growth logic placeholder
     const growth = '12.5%';
@@ -39,7 +35,6 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
         customer: true,
       },
     });
-    console.log('[API] Latest Orders fetched:', latestOrders.length);
 
     // Recent Notifications (limit 5)
     const recentNotifications = await prisma.notification.findMany({
@@ -49,7 +44,6 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
       orderBy: { createdAt: 'desc' },
       take: 5,
     });
-    console.log('[API] Recent Notifications fetched:', recentNotifications.length);
 
     // Format data
     const overviewStats = [
@@ -68,7 +62,6 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
       iconName: 'mark_email_unread',
       isNew: !n.isRead,
     }));
-    console.log('[API] Notifications formatted');
 
     const formattedOrders = latestOrders.map((order) => ({
       initials: order.customer?.name
@@ -79,13 +72,11 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
         .toUpperCase() ?? 'NA',
       orderId: `Order #${order.id}`,
       customerName: order.customer?.name ?? 'Unknown',
-      amount: order.totalAmount || 0,
+      amount: order.total || 0,
       status: order.status,
       date: order.createdAt.toISOString().split('T')[0],
     }));
-    console.log('[API] Orders formatted');
 
-    console.log('[API] Sending overview response');
     return NextResponse.json({
       success: true,
       message: 'Overview data fetched',
@@ -97,7 +88,6 @@ export const GET = withRole(['VENDOR'], async (req, user) => {
       },
     });
   } catch (error) {
-    console.error('[GET /vendor/overview] Error:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

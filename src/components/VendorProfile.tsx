@@ -15,7 +15,13 @@ export default async function ViewVendorPage({ id }: Props) {
     include: {
       user: { select: { username: true, email: true } },
       category: true,
-      zones: true,
+      zones: {
+        include: {
+          zone: { 
+              select: { id: true, name: true, country: true, region: true },
+            },
+          },
+        },
       kycDocuments: true,
     },
   });
@@ -67,8 +73,16 @@ export default async function ViewVendorPage({ id }: Props) {
         </div>
         <div>
           <strong className="text-gray-700">Zone:</strong>
-          <div className="text-gray-900">{vendor.zone?.name || "—"}</div>
+          <div className="text-gray-900">
+            {Array.isArray(vendor.zones) && vendor.zones.length > 0
+              ? vendor.zones
+                  .map((z) => z.zone?.name)
+                  .filter(Boolean)
+                  .join(', ')
+              : '—'}
+          </div>
         </div>
+
         <div>
           <strong className="text-gray-700">GST Number:</strong>
           <div className="text-gray-900">{vendor.gstNumber || "—"}</div>
