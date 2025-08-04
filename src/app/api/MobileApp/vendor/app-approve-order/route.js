@@ -28,6 +28,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         vendor: true,
         customer: true,
         items: { include: { product: true } },
+        payment: true, 
       },
     });
 
@@ -61,6 +62,10 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       return NextResponse.json({ error: 'Shiprocket token not found' }, { status: 500 });
     }
 
+    const paymentMode = order.payment?.mode;
+    const paymentMethod = paymentMode === 'COD' ? 'COD' : 'Prepaid';
+
+
     const shipmentPayload = {
       order_id: `APP-${order.id}`,
       order_date: new Date(order.createdAt).toISOString().split('T')[0],
@@ -79,7 +84,7 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         selling_price: item.basePrice,
         tax: item.taxAmount,
       })),
-      payment_method: 'Prepaid',
+      payment_method: paymentMethod,
       sub_total: order.subTotal,
       length: 10,
       breadth: 10,
