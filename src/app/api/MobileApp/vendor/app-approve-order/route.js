@@ -107,17 +107,10 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
         }
       );
 
+      const { shipment_id, awb_code, courier_company_id, courier_name } = srRes.data;
       console.log('[✅ Shiprocket Success Response]', JSON.stringify(srRes.data, null, 2));
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        console.error('[❌ Shiprocket Error Response]', JSON.stringify(err.response?.data, null, 2));
-      } else {
-        console.error('[❌ Unknown Shiprocket Error]', err);
-      }
-    }
 
-    const { shipment_id, awb_code, courier_company_id, courier_name } = srRes.data;
-
+      
     const updatedOrder = await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -161,6 +154,14 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       shiprocket: srRes.data,
       order: updatedOrder,
     });
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error('[❌ Shiprocket Error Response]', JSON.stringify(err.response?.data, null, 2));
+      } else {
+        console.error('[❌ Unknown Shiprocket Error]', err);
+      }
+    }
+
   } catch (err) {
     console.error('[ShiprocketApproveAPI Error]', err?.response?.data || err);
     return NextResponse.json(
