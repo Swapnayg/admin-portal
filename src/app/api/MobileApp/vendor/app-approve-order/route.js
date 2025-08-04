@@ -92,20 +92,29 @@ export const POST = withRole(['VENDOR'], async (req, user) => {
       weight: 0.5,
     };
 
-    console.log('[Shiprocket Payload]', JSON.stringify(shipmentPayload, null, 2));
+    console.log('[Final Payment Mode]', paymentMethod);
+    console.log('[Final Payload]', JSON.stringify(shipmentPayload, null, 2));
 
-    const srRes = await axios.post(
-      'https://apiv2.shiprocket.in/v1/external/orders/create/adhoc',
-      shipmentPayload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+    try {
+      const srRes = await axios.post(
+        'https://apiv2.shiprocket.in/v1/external/orders/create/adhoc',
+        shipmentPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log('[✅ Shiprocket Success Response]', JSON.stringify(srRes.data, null, 2));
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error('[❌ Shiprocket Error Response]', JSON.stringify(err.response?.data, null, 2));
+      } else {
+        console.error('[❌ Unknown Shiprocket Error]', err);
       }
-    );
-
-    console.log('[Shiprocket Response]', srRes.data);
+    }
 
     const { shipment_id, awb_code, courier_company_id, courier_name } = srRes.data;
 
